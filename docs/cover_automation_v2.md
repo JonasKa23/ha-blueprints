@@ -8,8 +8,8 @@
 
 **Eine Automation pro Fenster/Rollladen-Paar.** Du legst für jedes Fenster eine eigene
 Instanz aus diesem Blueprint an und wählst dort genau einen Rollladen und genau einen
-Fensterkontakt aus (Drei-Zustands-Sensoren mit offen/gekippt/geschlossen, z. B.
-Homematic IP, werden unterstützt). Gemeinsame Einstellungen — die Uhrzeit fürs
+Fensterkontakt aus. Als Fensterkontakt funktionieren klassische binäre Sensoren
+(offen/geschlossen) genauso wie Drei-Zustands-Sensoren (offen/gekippt/geschlossen). Gemeinsame Einstellungen — die Uhrzeit fürs
 morgendliche Öffnen, der Nachtmodus-Schalter, die Wetter-Entität — sind Helfer, die du
 einfach in allen Instanzen identisch auswählst.
 
@@ -152,7 +152,10 @@ automatisch, sobald das Fenster geschlossen wird — vorausgesetzt, die Companio
 ist aktuell (das Aufräumen nutzt `clear_notification` mit Tags).
 
 **Kann ich die Automation zeitweise anhalten?** Ja — im Abschnitt "Pausieren" einen
-`input_boolean`-Helfer auswählen. Solange der an ist, macht die Automatik nichts:
+`input_boolean`-Helfer auswählen. Die Logik ist wählbar: "AN pausiert" für einen
+Helfer wie "Aufnahme läuft", oder "AUS pausiert" für einen Aktiv-Schalter fürs
+Dashboard ("Rollladensteuerung aktiv" — an heißt: die Automatik läuft). Während
+der Pause macht die Automatik nichts:
 keine Fahrten, keine Lichter, keine Meldungen. Zwei Ausnahmen: Der Sturmschutz
 greift weiterhin, und der "Rollladen schließen"-Knopf einer Benachrichtigung
 funktioniert wie der Wandtaster — bewusste Befehle werden nicht blockiert.

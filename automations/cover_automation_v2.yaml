@@ -35,13 +35,22 @@ blueprint:
         window_sensor:
           name: Fenstersensor
           description: >
-            Der Fensterkontakt zu diesem Rollladen. Drei-Zustands-Sensoren
-            (offen/gekippt/geschlossen, z.B. Homematic IP) werden unterstützt.
+            Der Fensterkontakt zu diesem Rollladen. Unterstützt werden klassische
+            binäre Fensterkontakte (offen/geschlossen) ebenso wie
+            Drei-Zustands-Sensoren mit offen/gekippt/geschlossen. Hinweis: Binäre
+            Kontakte erscheinen in der Auswahl nur mit passender Geräteklasse
+            (Tür, Fenster, Öffnung oder Garagentor) — die lässt sich in den
+            Einstellungen der Entität nachrüsten.
           selector:
             entity:
-              domain:
-                - binary_sensor
-                - sensor
+              filter:
+                - domain: binary_sensor
+                  device_class:
+                    - door
+                    - window
+                    - opening
+                    - garage_door
+                - domain: sensor
     morning_section:
       name: Morgens öffnen
       description: Einstellungen für das automatische Öffnen am Morgen.
@@ -643,12 +652,13 @@ blueprint:
         pause_boolean:
           name: Pausier-Helfer (optional)
           description: >
-            Ein input_boolean-Helfer. Solange er eingeschaltet ist, macht die
-            Automatik nichts — keine Fahrten, keine Lichter, keine Meldungen.
+            Ein input_boolean-Helfer, der die Automatik anhält — keine Fahrten,
+            keine Lichter, keine Meldungen. Ob dafür sein eingeschalteter oder
+            ausgeschalteter Zustand zählt, legst du im nächsten Feld fest.
             Zwei Ausnahmen: Der Sturmschutz greift weiterhin (Hardware-Schutz geht
             vor), und der "Rollladen schließen"-Knopf einer Benachrichtigung
             funktioniert wie der Wandtaster — bewusste Befehle werden nicht blockiert.
-            Beim Ausschalten der Pause wird ein inzwischen aktiver Nachtmodus
+            Beim Ende der Pause wird ein inzwischen aktiver Nachtmodus
             nachgeholt und die Beschattung neu bewertet; verpasste Einzelereignisse
             (z.B. das morgendliche Öffnen oder das Zurückfahren nach dem Lüften)
             werden nicht nachgeholt.
@@ -656,6 +666,22 @@ blueprint:
           selector:
             entity:
               domain: input_boolean
+        pause_mode:
+          name: Logik des Pausier-Helfers
+          description: >
+            "AN pausiert" passt zu einem Helfer wie "Aufnahme läuft" — einschalten
+            hält die Automatik an. "AUS pausiert" macht den Helfer zum
+            Aktiv-Schalter fürs Dashboard, z.B. "Rollladensteuerung aktiv" —
+            eingeschaltet läuft die Automatik, ausgeschaltet pausiert sie.
+          default: on_pauses
+          selector:
+            select:
+              mode: list
+              options:
+                - value: on_pauses
+                  label: Helfer AN = Automatik pausiert (z.B. "Aufnahme läuft")
+                - value: off_pauses
+                  label: Helfer AUS = Automatik pausiert (z.B. "Rollladensteuerung aktiv")
     notification_section:
       name: Benachrichtigungen
       description: >
@@ -750,6 +776,11 @@ variables:
   mosquito_area_input: !input mosquito_area
   mosquito_exclude: !input mosquito_exclude
   pause_boolean: !input pause_boolean
+  pause_mode: !input pause_mode
+  pause_active: >-
+    {{ pause_boolean is string
+       and ((pause_mode == 'on_pauses' and is_state(pause_boolean, 'on'))
+            or (pause_mode == 'off_pauses' and is_state(pause_boolean, 'off'))) }}
   sleep_mode_boolean: !input sleep_mode_boolean
   use_area_name: !input use_area_name
   notification_timeout: !input notification_timeout
@@ -808,10 +839,18 @@ triggers:
     for:
       seconds: 2
     id: window_closed
+  # Beide Richtungen, gleiche ID: Welcher Übergang die Pause beendet, hängt von
+  # der gewählten Logik ab — das Gate am Aktions-Anfang sortiert den jeweils
+  # anderen (Pause-Beginn) aus, weil die Pause dann gerade aktiv ist
   - trigger: state
     entity_id: !input pause_boolean
     from: "on"
     to: "off"
+    id: pause_ended
+  - trigger: state
+    entity_id: !input pause_boolean
+    from: "off"
+    to: "on"
     id: pause_ended
   - trigger: state
     entity_id: !input night_mode_boolean
@@ -858,7 +897,7 @@ actions:
   # der Notification-Knopf (ein bewusster Nutzer-Befehl, wie der Wandtaster)
   - condition: >-
       {{ trigger.id | default('') in ['storm_detected', 'window_closed', 'close_shutter_action']
-         or not (pause_boolean is string and is_state(pause_boolean, 'on')) }}
+         or not pause_active }}
   - choose:
       # --- MORGENS ÖFFNEN ---
       - conditions:
@@ -1454,7 +1493,10 @@ actions:
           # oder Sturm aktiv geworden sein, dann darf der Snapshot nicht zurückgeholt werden
           - variables:
               night_mode_on_now: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
-              pause_now: "{{ pause_boolean is string and is_state(pause_boolean, 'on') }}"
+              pause_now: >-
+                {{ pause_boolean is string
+                   and ((pause_mode == 'on_pauses' and is_state(pause_boolean, 'on'))
+                        or (pause_mode == 'off_pauses' and is_state(pause_boolean, 'off'))) }}
               wind_now: >-
                 {% if storm_wind_sensor is string %}
                   {{ states(storm_wind_sensor) | float(0) }}
