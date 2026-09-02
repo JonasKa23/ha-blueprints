@@ -158,9 +158,11 @@ Kipp-Position statt komplett auf, und die Beschattung läuft weiter, statt zu
 pausieren. Typischer Fall: das Badfenster mit einfachem binärem Kontakt.
 
 **Kann ich die Automation zeitweise anhalten?** Ja — im Abschnitt "Pausieren" einen
-`input_boolean`-Helfer auswählen. Die Logik ist wählbar: "AN pausiert" für einen
-Helfer wie "Aufnahme läuft", oder "AUS pausiert" für einen Aktiv-Schalter fürs
-Dashboard ("Rollladensteuerung aktiv" — an heißt: die Automatik läuft). Während
+einen oder mehrere `input_boolean`-Helfer auswählen. Die Logik ist wählbar: "AN
+pausiert" für Helfer wie "Aufnahme läuft", oder "AUS pausiert" für Aktiv-Schalter
+fürs Dashboard ("Rollladensteuerung aktiv" — an heißt: die Automatik läuft). Bei
+mehreren Helfern pausiert die Automatik nur, wenn alle gleichzeitig im
+Pausier-Zustand stehen — bei "AUS pausiert" läuft sie also, sobald einer an ist. Während
 der Pause macht die Automatik nichts:
 keine Fahrten, keine Lichter, keine Meldungen. Zwei Ausnahmen: Der Sturmschutz
 greift weiterhin, und der "Rollladen schließen"-Knopf einer Benachrichtigung

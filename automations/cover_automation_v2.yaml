@@ -666,27 +666,30 @@ blueprint:
         pause_boolean:
           name: Pausier-Helfer (optional)
           description: >
-            Ein input_boolean-Helfer, der die Automatik anhält — keine Fahrten,
-            keine Lichter, keine Meldungen. Ob dafür sein eingeschalteter oder
-            ausgeschalteter Zustand zählt, legst du im nächsten Feld fest.
-            Zwei Ausnahmen: Der Sturmschutz greift weiterhin (Hardware-Schutz geht
-            vor), und der "Rollladen schließen"-Knopf einer Benachrichtigung
-            funktioniert wie der Wandtaster — bewusste Befehle werden nicht blockiert.
-            Beim Ende der Pause wird ein inzwischen aktiver Nachtmodus
-            nachgeholt und die Beschattung neu bewertet; verpasste Einzelereignisse
-            (z.B. das morgendliche Öffnen oder das Zurückfahren nach dem Lüften)
-            werden nicht nachgeholt.
+            Ein oder mehrere input_boolean-Helfer, die die Automatik anhalten —
+            keine Fahrten, keine Lichter, keine Meldungen. Ob dafür der ein- oder
+            ausgeschaltete Zustand zählt, legst du im nächsten Feld fest; bei
+            mehreren Helfern pausiert die Automatik nur, wenn ALLE gleichzeitig
+            im Pausier-Zustand sind. Zwei Ausnahmen: Der Sturmschutz greift
+            weiterhin (Hardware-Schutz geht vor), und der "Rollladen schließen"-Knopf
+            einer Benachrichtigung funktioniert wie der Wandtaster — bewusste
+            Befehle werden nicht blockiert. Beim Ende der Pause wird ein inzwischen
+            aktiver Nachtmodus nachgeholt und die Beschattung neu bewertet;
+            verpasste Einzelereignisse (z.B. das morgendliche Öffnen oder das
+            Zurückfahren nach dem Lüften) werden nicht nachgeholt.
           default: []
           selector:
             entity:
               domain: input_boolean
+              multiple: true
         pause_mode:
           name: Logik des Pausier-Helfers
           description: >
-            "AN pausiert" passt zu einem Helfer wie "Aufnahme läuft" — einschalten
-            hält die Automatik an. "AUS pausiert" macht den Helfer zum
-            Aktiv-Schalter fürs Dashboard, z.B. "Rollladensteuerung aktiv" —
-            eingeschaltet läuft die Automatik, ausgeschaltet pausiert sie.
+            Gilt für alle ausgewählten Pausier-Helfer gemeinsam. "AN pausiert"
+            passt zu Helfern wie "Aufnahme läuft" — pausiert wird, wenn alle
+            eingeschaltet sind. "AUS pausiert" macht die Helfer zu Aktiv-Schaltern
+            fürs Dashboard (z.B. "Rollladensteuerung aktiv") — pausiert wird, wenn
+            alle ausgeschaltet sind; sobald einer an ist, läuft die Automatik.
           default: on_pauses
           selector:
             select:
@@ -792,10 +795,16 @@ variables:
   mosquito_exclude: !input mosquito_exclude
   pause_boolean: !input pause_boolean
   pause_mode: !input pause_mode
+  # Pausiert = ALLE ausgewählten Helfer stehen im Pausier-Zustand. Ältere
+  # Instanzen speichern einen einzelnen Helfer als String statt Liste — beides
+  # wird unterstützt. Nicht existierende/unavailable Helfer pausieren nie (fail-safe).
   pause_active: >-
-    {{ pause_boolean is string
-       and ((pause_mode == 'on_pauses' and is_state(pause_boolean, 'on'))
-            or (pause_mode == 'off_pauses' and is_state(pause_boolean, 'off'))) }}
+    {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %}
+    {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %}
+    {% set found = expand(helpers) | list %}
+    {{ helpers | length > 0
+       and found | length > 0
+       and found | rejectattr('state', 'eq', pausing) | list | length == 0 }}
   sleep_mode_boolean: !input sleep_mode_boolean
   use_area_name: !input use_area_name
   notification_timeout: !input notification_timeout
@@ -1030,6 +1039,18 @@ actions:
       - conditions:
           - condition: trigger
             id: pause_ended
+          # Nur nachholen, wenn VOR diesem Helfer-Wechsel wirklich pausiert war:
+          # Bei mehreren Helfern feuert der Trigger auch bei Wechseln, die die
+          # (nie aktive) Pause gar nicht beendet haben — dann darf hier nichts passieren
+          - >-
+            {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %}
+            {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %}
+            {% set ns = namespace(all = helpers | length > 0) %}
+            {% for h in helpers %}
+              {% set st = trigger.from_state.state if h == trigger.entity_id else states(h) %}
+              {% if st != pausing %}{% set ns.all = false %}{% endif %}
+            {% endfor %}
+            {{ ns.all }}
         sequence:
           # Beschattungs-Status freigeben: Während der Pause ist der Sollwert
           # weitergewandert — ohne Freigabe würde der erste Tick die Abweichung
@@ -1511,9 +1532,12 @@ actions:
           - variables:
               night_mode_on_now: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
               pause_now: >-
-                {{ pause_boolean is string
-                   and ((pause_mode == 'on_pauses' and is_state(pause_boolean, 'on'))
-                        or (pause_mode == 'off_pauses' and is_state(pause_boolean, 'off'))) }}
+                {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %}
+                {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %}
+                {% set found = expand(helpers) | list %}
+                {{ helpers | length > 0
+                   and found | length > 0
+                   and found | rejectattr('state', 'eq', pausing) | list | length == 0 }}
               wind_now: >-
                 {% if storm_wind_sensor is string %}
                   {{ states(storm_wind_sensor) | float(0) }}
