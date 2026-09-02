@@ -129,6 +129,20 @@ blueprint:
           default: false
           selector:
             boolean: {}
+        treat_open_as_tilted:
+          name: Öffnen wie Kippen behandeln
+          description: >
+            Für Fenster mit einfachem binärem Kontakt (nur offen/geschlossen), die
+            im Alltag praktisch immer nur gekippt werden — z.B. das Badfenster.
+            Wenn aktiviert, wird jedes "offen" wie "gekippt" behandelt: Der
+            Rollladen fährt beim Öffnen auf die Kipp-Position statt komplett auf,
+            auch der Nachtmodus nutzt die Kipp-Position, und die Beschattung läuft
+            weiter (mit der Kipp-Position als Lüftungsspalt), statt bei offenem
+            Fenster zu pausieren. Benachrichtigungen melden weiterhin "offen" —
+            das entspricht dem, was der Sensor tatsächlich sieht.
+          default: false
+          selector:
+            boolean: {}
     window_geometry_section:
       name: Fenstergeometrie & Sonnenausrichtung
       description: >
@@ -742,6 +756,7 @@ variables:
   tilted_position: !input tilted_position
   reclose_timeout: !input reclose_timeout
   force_close: !input force_close
+  treat_open_as_tilted: !input treat_open_as_tilted
   morning_position: !input morning_position
   night_mode_boolean: !input night_mode_boolean
   night_ventilation_position: !input night_ventilation_position
@@ -965,7 +980,7 @@ actions:
                   entity_id: "{{ solar_heating_status_helper }}"
           - choose:
               - conditions:
-                  - "{{ states(window_sensor) == 'tilted' }}"
+                  - "{{ states(window_sensor) == 'tilted' or (treat_open_as_tilted and states(window_sensor) in ['on', 'open']) }}"
                 sequence:
                   - action: cover.set_cover_position
                     target:
@@ -1042,7 +1057,7 @@ actions:
             then:
               - choose:
                   - conditions:
-                      - "{{ states(window_sensor) == 'tilted' }}"
+                      - "{{ states(window_sensor) == 'tilted' or (treat_open_as_tilted and states(window_sensor) in ['on', 'open']) }}"
                     sequence:
                       - action: cover.set_cover_position
                         target:
@@ -1148,7 +1163,7 @@ actions:
                   - "{{ storm_ok }}"
                   - "{{ weather_ok }}"
                   - "{{ not (night_mode_boolean is string and is_state(night_mode_boolean, 'on')) }}"
-                  - "{{ force_shading or states(window_sensor) not in ['on', 'open'] }}"
+                  - "{{ force_shading or treat_open_as_tilted or states(window_sensor) not in ['on', 'open'] }}"
                 sequence:
                   - variables:
                       # Höhe (über dem Boden), auf der ein Sonnenstrahl die Fensterebene
@@ -1441,7 +1456,7 @@ actions:
                     - "{{ cover_entity }}"
           - choose:
               - conditions:
-                  - "{{ trigger.to_state.state == 'tilted' }}"
+                  - "{{ trigger.to_state.state == 'tilted' or (treat_open_as_tilted and trigger.to_state.state in ['on', 'open']) }}"
                   - "{{ state_attr(cover_entity, 'current_position') | int(101) < tilted_position }}"
                 sequence:
                   - action: cover.set_cover_position
@@ -1451,6 +1466,7 @@ actions:
                       position: !input tilted_position
               - conditions:
                   - "{{ trigger.to_state.state in ['on', 'open'] }}"
+                  - "{{ not treat_open_as_tilted }}"
                   - "{{ not night_mode_on }}"
                   # Bei aktiver erzwungener Beschattung bleibt der Rollladen unten
                   - "{{ not (force_shading and shading_status_helper is string and is_state(shading_status_helper, 'on')) }}"
@@ -1470,6 +1486,7 @@ actions:
               # Nachts nur bis zur Lüftungsposition öffnen statt komplett
               - conditions:
                   - "{{ trigger.to_state.state in ['on', 'open'] }}"
+                  - "{{ not treat_open_as_tilted }}"
                   - "{{ night_mode_on }}"
                   - "{{ state_attr(cover_entity, 'current_position') | int(101) < night_ventilation_position }}"
                 sequence:
