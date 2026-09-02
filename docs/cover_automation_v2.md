@@ -79,6 +79,15 @@ Aus Fensterhöhe, Brüstungshöhe und der maximal erlaubten Sonneneinfall-Tiefe 
 die Automation alle 5 Minuten die Position, bei der die Sonne höchstens bis zur
 eingestellten Tiefe auf den Boden fällt, und führt den Rollladen der Sonne nach.
 
+Standardmäßig nimmt die Berechnung an, dass die Motor-Prozente des Rollladens linear
+der freien Glasfläche entsprechen. Real hat der Laufweg aber Totzonen: Unten sitzt der
+Panzer irgendwann auf und nur noch die Lamellen schließen sich, oben wird nur noch in
+den Kasten eingezogen. Mit der **Glas-Kalibrierung** (Aufsetz-Punkt und oberer
+Glas-Endpunkt im Sonnenschutz-Abschnitt) rechnet die Beschattung in echter Glasfläche:
+Aufsetz-Punkt ermitteln = Rollladen langsam herunterfahren, bis der Lichtspalt unten
+gerade verschwindet. Netter Nebeneffekt: Die Beschattung fährt dann nie unter den
+Aufsetz-Punkt — die Lamellen bleiben immer offen.
+
 ### Manuelle Eingriffe während der Beschattung
 
 Die Automation weiß nie, _wer_ den Rollladen bewegt hat — sie vergleicht bei jedem
@@ -127,6 +136,13 @@ die Einmal-Logik des Sonnenheizens und die Eingriffs-Erkennung auf.
   nächste reguläre Ereignis (Nachtmodus, Morgens, Beschattung) ihn übernimmt.
 
 ## FAQ
+
+**Was bedeuten 0 % und 100 % bei den Positionen?** Das Blueprint folgt der
+Home-Assistant-Konvention: 100 % = ganz offen, 0 % = ganz geschlossen. Die Prozente
+sind dabei die Werte deines Cover-Aktors, also Motor-Laufweg — nicht zwingend
+Glasfläche. Für die Beschattung lässt sich dieser Unterschied über die
+Glas-Kalibrierung (siehe oben) ausgleichen; alle anderen Positions-Eingaben
+(morgens, Kipp-Position, Nachtlüftung) sind bewusst direkte Aktor-Werte.
 
 **Die Beschattung tut nichts — warum?** Prüfe in dieser Reihenfolge: Gibt es eine
 Benachrichtigung wegen fehlendem Status-Helfer? Ist eine Temperaturquelle gesetzt

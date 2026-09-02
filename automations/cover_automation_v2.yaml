@@ -332,6 +332,40 @@ blueprint:
               step: 0.1
               mode: box
               unit_of_measurement: m
+        glass_bottom_position:
+          name: Aufsetz-Punkt (Glas-Kalibrierung)
+          description: >
+            Die Position (in %), bei der der Panzer gerade auf Fensterbank oder
+            Boden aufsitzt und das Glas komplett abgedeckt ist — darunter schließen
+            sich nur noch die Lamellen. Zum Ermitteln den Rollladen langsam
+            herunterfahren, bis der Lichtspalt unten gerade verschwindet, und die
+            Position ablesen. Mit gesetztem Wert rechnet die Beschattung in echter
+            Glasfläche und fährt nie tiefer als diesen Punkt — die Lamellen bleiben
+            offen. 0 = Motor-Position wird direkt als Glasfläche interpretiert
+            (bisheriges Verhalten).
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 50
+              step: 1
+              mode: slider
+              unit_of_measurement: "%"
+        glass_top_position:
+          name: Oberer Glas-Endpunkt (Glas-Kalibrierung)
+          description: >
+            Die Position (in %), bei der das Glas gerade komplett frei ist —
+            darüber wird der Panzer nur noch in den Kasten eingezogen. Meist nahe
+            100 und deutlich unwichtiger als der Aufsetz-Punkt. Muss über dem
+            Aufsetz-Punkt liegen, sonst wird die Kalibrierung ignoriert.
+          default: 100
+          selector:
+            number:
+              min: 50
+              max: 100
+              step: 1
+              mode: slider
+              unit_of_measurement: "%"
         shading_min_position:
           name: Minimale Beschattungsposition
           description: >
@@ -777,6 +811,8 @@ variables:
   window_height: !input window_height
   window_sill_height: !input window_sill_height
   shading_depth: !input shading_depth
+  glass_bottom_position: !input glass_bottom_position
+  glass_top_position: !input glass_top_position
   shading_min_position: !input shading_min_position
   shading_end_position: !input shading_end_position
   shading_temp_sensor: !input shading_temp_sensor
@@ -1193,8 +1229,12 @@ actions:
                         {{ shading_depth * tan(sun_elevation * pi / 180)
                            / ([cos(az_diff * pi / 180), 0.087] | max) }}
                       target_position: >-
-                        {% set raw = ((ray_height - window_sill_height) / window_height * 100) | round(0) | int %}
-                        {% set p = [raw, shading_min_position | int, 0] | max %}
+                        {% set glass_free = [[(ray_height - window_sill_height) / window_height * 100, 0] | max, 100] | min %}
+                        {% set a = glass_bottom_position | int(0) %}
+                        {% set b = glass_top_position | int(100) %}
+                        {% if b <= a %}{% set a = 0 %}{% set b = 100 %}{% endif %}
+                        {% set p = (a + glass_free * (b - a) / 100) | round(0) | int %}
+                        {% set p = [p, shading_min_position | int] | max %}
                         {% set p = [p, 100] | min %}
                         {% if states(window_sensor) in ['tilted', 'on', 'open'] %}
                           {{ [p, tilted_position | int] | max }}
