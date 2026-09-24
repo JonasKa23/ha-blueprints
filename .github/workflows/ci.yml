@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install linters
-        run: pip install --quiet yamllint pyyaml
+        run: pip install --quiet yamllint pyyaml jinja2
 
       - name: yamllint
         if: ${{ !cancelled() }}
@@ -39,3 +39,7 @@ jobs:
           for f in automations/*.yaml; do
             python3 skills/ha-blueprint-dev/scripts/validate_blueprint.py "$f"
           done
+
+      - name: Cover logic regression checks
+        if: ${{ !cancelled() }}
+        run: python -m unittest discover -s tests

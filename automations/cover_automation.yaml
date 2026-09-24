@@ -1,11 +1,11 @@
 blueprint:
   name: Rollladensteuerung (Sonnenschutz, Sonnenheizen, Abend- & Nachtmodus, Sturmschutz)
   description: |
-    Steuert einen einzelnen Rollladen anhand "seines" Fensters (einfacher Schließkontakt, 
-    offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes Fenster (fährt nur 
-    auf eine einstellbare Zielposition, nicht komplett auf) inkl. Rückfahr-Logik, Abendmodus 
-    (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset, nur wenn die 
-    laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet, mit frei 
+    Steuert einen einzelnen Rollladen anhand "seines" Fensters (einfacher Schließkontakt,
+    offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes Fenster (fährt nur
+    auf eine einstellbare Zielposition, nicht komplett auf) inkl. Rückfahr-Logik, Abendmodus
+    (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset, nur wenn die
+    laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet, mit frei
     einstellbarer Zielposition), Nachtmodus (manuell per Helfer, ebenfalls anhand der
     minimalen Tagestemperatur, mit frei einstellbarer Zielposition), Sturmschutz,
     automatische Beschattung anhand des Sonnenstands (Sonnenschutz, geprüft gegen die
@@ -406,12 +406,10 @@ blueprint:
               mode: slider
               unit_of_measurement: '%'
         shading_temp_sensor:
-          name: Außentemperatur-Sensor (optional)
-          description: |
-            Optionaler Temperatursensor für die Beschattungs-Bedingung (z.B. ein eigener
-            "Höchsttemperatur heute"-Sensor). Wenn leer, wird stattdessen die laut Wettervorhersage
-            erwartete MAXIMALE Tagestemperatur der Wetter-Entität aus dem Abschnitt "Wetter"
-            verwendet — eines von beiden muss verfügbar sein, sonst startet die Beschattung nie.
+          name: Tageshöchsttemperatur-Sensor (optional)
+          description: Optionaler Sensor für die erwartete Tageshöchsttemperatur, gemeinsam für Sonnenschutz
+            und Sonnenheizen. Ohne Sensor wird die heutige Tageshöchsttemperatur aus der Wettervorhersage
+            verwendet. Ein aktueller Außentemperatur-Sensor ist hierfür nicht geeignet.
           default: []
           selector:
             entity:
@@ -432,9 +430,9 @@ blueprint:
               unit_of_measurement: °C
         shading_temp_hysteresis:
           name: Temperatur-Hysterese
-          description: |
-            Die Beschattung endet erst, wenn die Temperatur um diesen Wert unter die Schwelle
-            gefallen ist (verhindert ständiges Auf und Ab).
+          description: Eine aktive Beschattung führt innerhalb der Hysterese weiter nach. Sie endet
+            temperaturbedingt erst bei oder unter Schwelle minus Hysterese. Ohne gültige Temperatur wird die
+            Position gehalten, sofern kein anderer Beendigungsgrund vorliegt.
           default: 2
           selector:
             number:
@@ -518,14 +516,9 @@ blueprint:
               domain: input_boolean
         solar_heating_temp_threshold:
           name: Temperatur-Schwelle
-          description: |
-            Sonnenheizen greift nur, wenn die aktuelle Außentemperatur unter diesem Wert liegt
-            (Heizperiode). Nutzt denselben Temperatursensor bzw. dieselbe Wetter-Entität wie der
-            Sonnenschutz (Außentemperatur-Sensor bzw. Wetter-Entität aus dem Abschnitt "Wetter") —
-            hier weiterhin die aktuelle Temperatur, nicht die Tagesvorhersage. ⚠️ Sollte deutlich
-            unter der Beschattungs-Temperatur-Schwelle liegen, damit sich Sonnenschutz und
-            Sonnenheizen bei überlappenden Werten nicht widersprechen (gleichzeitig schließen und
-            öffnen wollen).
+          description: Sonnenheizen greift nur, wenn die erwartete Tageshöchsttemperatur höchstens diesem Wert
+            entspricht. Nutzt denselben Tageshöchsttemperatur-Sensor bzw. dieselbe Tagesvorhersage wie der
+            Sonnenschutz. Ohne gültige Höchsttemperatur beginnt kein Sonnenheizen.
           default: 12
           selector:
             number:
@@ -589,6 +582,8 @@ blueprint:
         Nachtmodus (manuell): wird per gemeinsamem Helfer eingeschaltet und fährt dann auf seine
         Zielposition, sofern die minimale Tagestemperatur die Schwelle unterschreitet — sonst
         bleibt der Rollladen stehen (eine laufende Beschattung wird trotzdem beendet).
+
+        Der Abendmodus ist eine einmalige Fahrt ohne eigenen Status-Helfer. Bei offenem Fenster entfällt die Fahrt. Nachtmodus und morgendliches Öffnen übernehmen über ihre eigenen Auslöser.
       icon: mdi:weather-night
       collapsed: true
       input:
@@ -614,7 +609,8 @@ blueprint:
             01:00:00 = eine Stunde nach Sonnenuntergang). Negative Werte lösen vor dem
             Sonnenuntergang aus.
           default:
-            hours: 1
+            hours: 0
+            minutes: 30
           selector:
             duration:
               enable_second: true
@@ -909,8 +905,17 @@ variables:
       {% endif %}
     {% endfor %} {{ ns.device_names }}
   shading_enabled: !input 'shading_enabled'
+  daily_forecast: {}
+  today_forecast: {}
+  daily_high:
+  daily_low:
+  night_temp_ok: true
+  evening_temp_ok: true
+  solar_heating_enabled: !input 'solar_heating_enabled'
 trigger_variables:
   window_sensor_tv: !input 'window_sensor'
+  shading_enabled_tv: !input 'shading_enabled'
+  solar_heating_enabled_tv: !input 'solar_heating_enabled'
 triggers:
   - trigger: time
     at: !input 'morning_time'
@@ -981,12 +986,8 @@ triggers:
     id: close_shutter_action
   - trigger: time_pattern
     minutes: /5
-    id: shading_tick
-    enabled: !input 'shading_enabled'
-  - trigger: time_pattern
-    minutes: /5
-    id: solar_heating_tick
-    enabled: !input 'solar_heating_enabled'
+    id: solar_tick
+    enabled: '{{ shading_enabled_tv or solar_heating_enabled_tv }}'
 actions:
   - condition: |-
       {{ trigger.id | default('') in ['storm_detected', 'window_closed', 'close_shutter_action']
@@ -1032,32 +1033,37 @@ actions:
           - condition: trigger
             id: evening_close
         sequence:
-          - variables:
-              evening_temp_ok: true
-              evening_forecast: {}
-          - if:
-              - '{{ weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: evening_forecast
-                continue_on_error: true
+          - &refresh_daily_forecast
+            alias: Tagesvorhersage aktualisieren und Temperaturen auswerten
+            sequence:
               - variables:
-                  evening_temp_ok: |-
-                    {% set fc = (evening_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                    {% set today = namespace(entries=[]) %}
-                    {% for entry in fc %}
+                  daily_forecast: {}
+              - if:
+                  - '{{ weather_entity is string }}'
+                then:
+                  - action: weather.get_forecasts
+                    target:
+                      entity_id: '{{ weather_entity }}'
+                    data:
+                      type: daily
+                    response_variable: daily_forecast
+                    continue_on_error: true
+              - variables:
+                  today_forecast: |-
+                    {% set entries = (daily_forecast.get(weather_entity, {}) or {}).get('forecast') or [] if weather_entity is string else [] %}
+                    {% set result = namespace(entry={}) %}
+                    {% for entry in entries %}
                       {% set dt = as_datetime(entry.get('datetime'), none) %}
-                      {% if dt is not none and as_local(dt).date() == now().date() %}
-                        {% set today.entries = today.entries + [entry] %}
+                      {% if dt is not none and as_local(dt).date() == now().date() and not result.entry %}
+                        {% set result.entry = entry %}
                       {% endif %}
                     {% endfor %}
-                    {% set fc = today.entries %}
-                    {% set low = (fc[0].get('templow') | float(none)) if fc else none %}
-                    {{ low is none or low <= evening_temp_threshold }}
+                    {{ result.entry }}
+                  daily_low: '{{ today_forecast.get(''templow'') | float(none) }}'
+                  daily_high: '{{ states(shading_temp_sensor) | float(none) if shading_temp_sensor is string else
+                    today_forecast.get(''temperature'') | float(none) }}'
+                  night_temp_ok: '{{ daily_low is none or daily_low <= night_temp_threshold }}'
+                  evening_temp_ok: '{{ daily_low is none or daily_low <= evening_temp_threshold }}'
           - variables:
               wind_now: |-
                 {% if storm_wind_sensor is string %}
@@ -1083,6 +1089,12 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: '{{ shading_status_helper }}'
+          - if:
+              - '{{ solar_heating_status_helper is string and is_state(solar_heating_status_helper, ''on'') }}'
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: '{{ solar_heating_status_helper }}'
       - conditions:
           - condition: trigger
             id: night_close
@@ -1099,32 +1111,7 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: '{{ solar_heating_status_helper }}'
-          - variables:
-              night_temp_ok: true
-              night_forecast: {}
-          - if:
-              - '{{ weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: night_forecast
-                continue_on_error: true
-              - variables:
-                  night_temp_ok: |-
-                    {% set fc = (night_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                    {% set today = namespace(entries=[]) %}
-                    {% for entry in fc %}
-                      {% set dt = as_datetime(entry.get('datetime'), none) %}
-                      {% if dt is not none and as_local(dt).date() == now().date() %}
-                        {% set today.entries = today.entries + [entry] %}
-                      {% endif %}
-                    {% endfor %}
-                    {% set fc = today.entries %}
-                    {% set low = (fc[0].get('templow') | float(none)) if fc else none %}
-                    {{ low is none or low <= night_temp_threshold }}
+          - *refresh_daily_forecast
           - condition: '{{ night_temp_ok }}'
           - variables:
               wind_now: |-
@@ -1196,31 +1183,7 @@ actions:
                 {% else %}
                   0
                 {% endif %}
-              night_temp_ok: true
-              night_forecast: {}
-          - if:
-              - '{{ weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: night_forecast
-                continue_on_error: true
-              - variables:
-                  night_temp_ok: |-
-                    {% set fc = (night_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                    {% set today = namespace(entries=[]) %}
-                    {% for entry in fc %}
-                      {% set dt = as_datetime(entry.get('datetime'), none) %}
-                      {% if dt is not none and as_local(dt).date() == now().date() %}
-                        {% set today.entries = today.entries + [entry] %}
-                      {% endif %}
-                    {% endfor %}
-                    {% set fc = today.entries %}
-                    {% set low = (fc[0].get('templow') | float(none)) if fc else none %}
-                    {{ low is none or low <= night_temp_threshold }}
+          - *refresh_daily_forecast
           - if:
               - '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               - '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
@@ -1243,31 +1206,8 @@ actions:
                       position: !input 'night_closed_position'
       - conditions:
           - condition: trigger
-            id: shading_tick
+            id: solar_tick
         sequence:
-          - if:
-              - '{{ shading_status_helper is not string }}'
-            then:
-              - action: persistent_notification.create
-                data:
-                  notification_id: rollladen_helfer_fehlt_{{ cover_entity | slugify }}
-                  title: 'Rollladensteuerung: Status-Helfer fehlt'
-                  message: Der Sonnenschutz für "{{ state_attr(cover_entity, 'friendly_name') or cover_entity }}"
-                    ist aktiviert, aber es ist kein Status-Helfer (input_boolean) ausgewählt — die Beschattung bleibt
-                    dadurch wirkungslos. Bitte in der Automation einen Helfer auswählen oder den Sonnenschutz deaktivieren.
-              - stop: Sonnenschutz aktiviert, aber kein Status-Helfer konfiguriert
-          - variables:
-              shading_forecast: {}
-          - if:
-              - '{{ shading_temp_sensor is not string and weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: shading_forecast
-                continue_on_error: true
           - variables:
               sun_elevation: '{{ state_attr(''sun.sun'', ''elevation'') | float(0) }}'
               sun_azimuth: '{{ state_attr(''sun.sun'', ''azimuth'') | float(0) }}'
@@ -1276,238 +1216,189 @@ actions:
                 {{ sun_elevation >= shading_min_elevation
                    and az_diff >= (0 - shading_fov_left)
                    and az_diff <= shading_fov_right }}
-              outdoor_temp: |-
-                {% if shading_temp_sensor is string %}
-                  {{ states(shading_temp_sensor) | float(-99) }}
-                {% elif weather_entity is string %}
-                  {% set fc = (shading_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                {% set today = namespace(entries=[]) %}
-                {% for entry in fc %}
-                  {% set dt = as_datetime(entry.get('datetime'), none) %}
-                  {% if dt is not none and as_local(dt).date() == now().date() %}
-                    {% set today.entries = today.entries + [entry] %}
-                  {% endif %}
-                {% endfor %}
-                {% set fc = today.entries %}
-                  {{ (fc[0].get('temperature') | float(-99)) if fc and (fc[0].get('temperature') | float(none)) is not none else -99 }}
-                {% else %}
-                  -99
-                {% endif %}
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
-              storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
-              temp_available: |-
-                {% if shading_temp_sensor is string %}
-                  {{ has_value(shading_temp_sensor) }}
-                {% elif weather_entity is string %}
-                  {% set fc = (shading_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                {% set today = namespace(entries=[]) %}
-                {% for entry in fc %}
-                  {% set dt = as_datetime(entry.get('datetime'), none) %}
-                  {% if dt is not none and as_local(dt).date() == now().date() %}
-                    {% set today.entries = today.entries + [entry] %}
-                  {% endif %}
-                {% endfor %}
-                {% set fc = today.entries %}
-                  {{ fc | length > 0 and (fc[0].get('temperature') | float(none)) is not none }}
-                {% else %}
-                  false
-                {% endif %}
-              weather_ok: |-
-                {{ shading_weather_states | length == 0
-                   or not (weather_entity is string)
-                   or states(weather_entity) in ['unknown', 'unavailable']
-                   or states(weather_entity) in shading_weather_states }}
-              weather_bad_stable: |-
-                {{ shading_weather_states | length > 0
-                   and weather_entity is string
-                   and states(weather_entity) not in ['unknown', 'unavailable']
-                   and states(weather_entity) not in shading_weather_states
-                   and (as_timestamp(now()) - as_timestamp(states[weather_entity].last_changed)) > 600 }}
-          - choose:
-              - conditions:
-                  - '{{ sun_in_window and outdoor_temp >= shading_temp_threshold }}'
-                  - '{{ storm_ok }}'
-                  - '{{ weather_ok }}'
-                  - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
-                  - '{{ force_shading or states(window_sensor) not in [''on'', ''open''] }}'
-                sequence:
+          - if:
+              - '{{ sun_in_window }}'
+            then:
+              - if:
+                  - '{{ shading_temp_sensor is string }}'
+                then:
                   - variables:
-                      ray_height: |-
-                        {{ shading_depth * tan(sun_elevation * pi / 180)
-                           / ([cos(az_diff * pi / 180), 0.087] | max) }}
-                      target_position: '{% set glass_free = [[(ray_height - window_sill_height) / window_height
-                        * 100, 0] | max, 100] | min %} {% set a = glass_bottom_position | int(0) %} {% set b = glass_top_position
-                        | int(100) %} {% if b <= a %}{% set a = 0 %}{% set b = 100 %}{% endif %} {% set p = (a +
-                        glass_free * (b - a) / 100) | round(0) | int %} {{ [p, shading_min_position | int] | max
-                        }}'
-                      current_position: '{{ state_attr(cover_entity, ''current_position'') | int(-1) }}'
-                  - condition: '{{ current_position >= 0 }}'
-                  - variables:
-                      deviation: '{{ (current_position - target_position | int) | abs }}'
-                  - if:
-                      - '{{ is_state(shading_status_helper, ''on'') }}'
-                    then:
+                      daily_high: '{{ states(shading_temp_sensor) | float(none) }}'
+                else:
+                  - *refresh_daily_forecast
+          - if:
+              - '{{ shading_enabled }}'
+            then:
+              - if:
+                  - '{{ shading_status_helper is not string }}'
+                then:
+                  - action: persistent_notification.create
+                    data:
+                      notification_id: rollladen_helfer_fehlt_{{ cover_entity | slugify }}
+                      title: 'Rollladensteuerung: Status-Helfer fehlt'
+                      message: Der Sonnenschutz für "{{ state_attr(cover_entity, 'friendly_name') or
+                        cover_entity }}" ist aktiviert, aber es ist kein Status-Helfer (input_boolean)
+                        ausgewählt — die Beschattung bleibt dadurch wirkungslos. Bitte in der Automation einen
+                        Helfer auswählen oder den Sonnenschutz deaktivieren.
+              - condition: '{{ shading_status_helper is string }}'
+              - variables:
+                  outdoor_temp: '{{ daily_high | float(-99) }}'
+                  wind_now: |-
+                    {% if storm_wind_sensor is string %}
+                      {{ states(storm_wind_sensor) | float(0) }}
+                    {% elif weather_entity is string %}
+                      {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
+                    {% else %}
+                      0
+                    {% endif %}
+                  storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
+                  temp_available: '{{ daily_high is not none }}'
+                  weather_ok: |-
+                    {{ shading_weather_states | length == 0
+                       or not (weather_entity is string)
+                       or states(weather_entity) in ['unknown', 'unavailable']
+                       or states(weather_entity) in shading_weather_states }}
+                  weather_bad_stable: |-
+                    {{ shading_weather_states | length > 0
+                       and weather_entity is string
+                       and states(weather_entity) not in ['unknown', 'unavailable']
+                       and states(weather_entity) not in shading_weather_states
+                       and (as_timestamp(now()) - as_timestamp(states[weather_entity].last_changed)) > 600 }}
+              - choose:
+                  - conditions:
+                      - |-
+                        {{ sun_in_window and temp_available
+                           and (outdoor_temp >= shading_temp_threshold
+                                or (is_state(shading_status_helper, 'on')
+                                    and outdoor_temp > shading_temp_threshold - shading_temp_hysteresis)) }}
+                      - '{{ storm_ok }}'
+                      - '{{ weather_ok }}'
+                      - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
+                      - '{{ force_shading or states(window_sensor) not in [''on'', ''open''] }}'
+                    sequence:
+                      - variables:
+                          ray_height: |-
+                            {{ shading_depth * tan(sun_elevation * pi / 180)
+                               / ([cos(az_diff * pi / 180), 0.087] | max) }}
+                          target_position: '{% set glass_free = [[(ray_height - window_sill_height) / window_height
+                            * 100, 0] | max, 100] | min %} {% set a = glass_bottom_position | int(0) %} {% set b
+                            = glass_top_position | int(100) %} {% if b <= a %}{% set a = 0 %}{% set b = 100 %}{%
+                            endif %} {% set p = (a + glass_free * (b - a) / 100) | round(0) | int %} {{ [p, shading_min_position
+                            | int] | max }}'
+                          current_position: '{{ state_attr(cover_entity, ''current_position'') | int(-1) }}'
+                      - condition: '{{ current_position >= 0 }}'
+                      - variables:
+                          deviation: '{{ (current_position - target_position | int) | abs }}'
                       - if:
-                          - '{{ deviation >= shading_min_change and deviation <= shading_override_threshold }}'
+                          - '{{ is_state(shading_status_helper, ''on'') }}'
                         then:
-                          - action: cover.set_cover_position
+                          - if:
+                              - '{{ deviation >= shading_min_change and deviation <= shading_override_threshold
+                                }}'
+                            then:
+                              - action: cover.set_cover_position
+                                target:
+                                  entity_id: !input 'cover'
+                                data:
+                                  position: '{{ target_position }}'
+                        else:
+                          - action: input_boolean.turn_on
                             target:
-                              entity_id: !input 'cover'
-                            data:
-                              position: '{{ target_position }}'
-                    else:
-                      - action: input_boolean.turn_on
+                              entity_id: '{{ shading_status_helper }}'
+                          - if:
+                              - '{{ deviation >= shading_min_change }}'
+                            then:
+                              - action: cover.set_cover_position
+                                target:
+                                  entity_id: !input 'cover'
+                                data:
+                                  position: '{{ target_position }}'
+                  - conditions:
+                      - '{{ is_state(shading_status_helper, ''on'') }}'
+                      - |-
+                        {{ (not sun_in_window)
+                           or (temp_available and outdoor_temp <= (shading_temp_threshold - shading_temp_hysteresis))
+                           or weather_bad_stable }}
+                      - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
+                    sequence:
+                      - action: input_boolean.turn_off
                         target:
                           entity_id: '{{ shading_status_helper }}'
-                      - if:
-                          - '{{ deviation >= shading_min_change }}'
-                        then:
-                          - action: cover.set_cover_position
-                            target:
-                              entity_id: !input 'cover'
-                            data:
-                              position: '{{ target_position }}'
-              - conditions:
-                  - '{{ is_state(shading_status_helper, ''on'') }}'
-                  - |-
-                    {{ (not sun_in_window)
-                       or (temp_available and outdoor_temp <= (shading_temp_threshold - shading_temp_hysteresis))
-                       or weather_bad_stable }}
-                  - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
-                sequence:
-                  - action: input_boolean.turn_off
-                    target:
-                      entity_id: '{{ shading_status_helper }}'
-                  - action: cover.set_cover_position
-                    target:
-                      entity_id: !input 'cover'
-                    data:
-                      position: !input 'shading_end_position'
-      - conditions:
-          - condition: trigger
-            id: solar_heating_tick
-        sequence:
+                      - action: cover.set_cover_position
+                        target:
+                          entity_id: !input 'cover'
+                        data:
+                          position: !input 'shading_end_position'
           - if:
-              - '{{ solar_heating_status_helper is not string }}'
+              - '{{ solar_heating_enabled }}'
             then:
-              - action: persistent_notification.create
-                data:
-                  notification_id: rollladen_heizhelfer_fehlt_{{ cover_entity | slugify }}
-                  title: 'Rollladensteuerung: Status-Helfer fehlt'
-                  message: Sonnenheizen für "{{ state_attr(cover_entity, 'friendly_name') or cover_entity }}" ist
-                    aktiviert, aber es ist kein eigener Status-Helfer (input_boolean) ausgewählt — das Feature bleibt
-                    dadurch wirkungslos. Bitte in der Automation einen Helfer auswählen oder Sonnenheizen deaktivieren.
-              - stop: Sonnenheizen aktiviert, aber kein Status-Helfer konfiguriert
-          - variables:
-              shading_forecast: {}
-          - if:
-              - '{{ shading_enabled and shading_temp_sensor is not string and weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: shading_forecast
-                continue_on_error: true
-          - variables:
-              sun_elevation: '{{ state_attr(''sun.sun'', ''elevation'') | float(0) }}'
-              sun_azimuth: '{{ state_attr(''sun.sun'', ''azimuth'') | float(0) }}'
-              az_diff: '{{ ((sun_azimuth - window_azimuth + 180) % 360) - 180 }}'
-              sun_in_window: |-
-                {{ sun_elevation >= shading_min_elevation
-                   and az_diff >= (0 - shading_fov_left)
-                   and az_diff <= shading_fov_right }}
-              outdoor_temp: |-
-                {% if shading_temp_sensor is string %}
-                  {{ states(shading_temp_sensor) | float(99) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'temperature') | float(99) }}
-                {% else %}
-                  99
-                {% endif %}
-              temp_available: |-
-                {% if shading_temp_sensor is string %}
-                  {{ has_value(shading_temp_sensor) }}
-                {% elif weather_entity is string %}
-                  {{ has_value(weather_entity) and state_attr(weather_entity, 'temperature') is not none }}
-                {% else %}
-                  false
-                {% endif %}
-              night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
-              storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
-              shading_temperature: |-
-                {% if shading_temp_sensor is string %}
-                  {{ states(shading_temp_sensor) | float(-99) }}
-                {% elif weather_entity is string %}
-                  {% set fc = (shading_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                {% set today = namespace(entries=[]) %}
-                {% for entry in fc %}
-                  {% set dt = as_datetime(entry.get('datetime'), none) %}
-                  {% if dt is not none and as_local(dt).date() == now().date() %}
-                    {% set today.entries = today.entries + [entry] %}
-                  {% endif %}
-                {% endfor %}
-                {% set fc = today.entries %}
-                  {{ (fc[0].get('temperature') | float(-99)) if fc and (fc[0].get('temperature') | float(none)) is not none else -99 }}
-                {% else %}
-                  -99
-                {% endif %}
-              shading_weather_ok: |-
-                {{ shading_weather_states | length == 0
-                   or not (weather_entity is string)
-                   or states(weather_entity) in ['unknown', 'unavailable']
-                   or states(weather_entity) in shading_weather_states }}
-              shading_priority: |-
-                {{ shading_enabled and shading_status_helper is string
-                   and (is_state(shading_status_helper, 'on')
-                        or (sun_in_window and shading_temperature >= shading_temp_threshold
-                            and shading_weather_ok
-                            and (force_shading or states(window_sensor) not in ['on', 'open']))) }}
-          - choose:
-              - conditions:
-                  - '{{ not is_state(solar_heating_status_helper, ''on'') }}'
-                  - '{{ sun_in_window and outdoor_temp <= solar_heating_temp_threshold }}'
-                  - '{{ not night_mode_on }}'
-                  - '{{ storm_ok }}'
-                  - |-
-                    {{ state_attr(cover_entity, 'current_position') is not none
-                       and state_attr(cover_entity, 'current_position') | int(101) < solar_heating_min_position }}
-                  - '{{ not shading_priority }}'
-                sequence:
-                  - action: input_boolean.turn_on
-                    target:
-                      entity_id: '{{ solar_heating_status_helper }}'
-                  - action: cover.set_cover_position
-                    target:
-                      entity_id: !input 'cover'
+              - if:
+                  - '{{ solar_heating_status_helper is not string }}'
+                then:
+                  - action: persistent_notification.create
                     data:
-                      position: !input 'solar_heating_position'
-              - conditions:
-                  - '{{ is_state(solar_heating_status_helper, ''on'') }}'
-                  - |-
-                    {{ (not sun_in_window)
-                       or (temp_available and outdoor_temp >= (solar_heating_temp_threshold + solar_heating_temp_hysteresis))
-                       or night_mode_on or shading_priority }}
-                sequence:
-                  - action: input_boolean.turn_off
-                    target:
-                      entity_id: '{{ solar_heating_status_helper }}'
+                      notification_id: rollladen_heizhelfer_fehlt_{{ cover_entity | slugify }}
+                      title: 'Rollladensteuerung: Status-Helfer fehlt'
+                      message: Sonnenheizen für "{{ state_attr(cover_entity, 'friendly_name') or cover_entity
+                        }}" ist aktiviert, aber es ist kein eigener Status-Helfer (input_boolean) ausgewählt —
+                        das Feature bleibt dadurch wirkungslos. Bitte in der Automation einen Helfer auswählen
+                        oder Sonnenheizen deaktivieren.
+              - condition: '{{ solar_heating_status_helper is string }}'
+              - variables:
+                  outdoor_temp: '{{ daily_high | float(99) }}'
+                  temp_available: '{{ daily_high is not none }}'
+                  night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
+                  wind_now: |-
+                    {% if storm_wind_sensor is string %}
+                      {{ states(storm_wind_sensor) | float(0) }}
+                    {% elif weather_entity is string %}
+                      {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
+                    {% else %}
+                      0
+                    {% endif %}
+                  storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
+                  shading_temperature: '{{ daily_high | float(-99) }}'
+                  shading_weather_ok: |-
+                    {{ shading_weather_states | length == 0
+                       or not (weather_entity is string)
+                       or states(weather_entity) in ['unknown', 'unavailable']
+                       or states(weather_entity) in shading_weather_states }}
+                  shading_priority: |-
+                    {{ shading_enabled and shading_status_helper is string
+                       and (is_state(shading_status_helper, 'on')
+                            or (sun_in_window and shading_temperature >= shading_temp_threshold
+                                and shading_weather_ok
+                                and (force_shading or states(window_sensor) not in ['on', 'open']))) }}
+              - choose:
+                  - conditions:
+                      - '{{ not is_state(solar_heating_status_helper, ''on'') }}'
+                      - '{{ sun_in_window and outdoor_temp <= solar_heating_temp_threshold }}'
+                      - '{{ not night_mode_on }}'
+                      - '{{ storm_ok }}'
+                      - |-
+                        {{ state_attr(cover_entity, 'current_position') is not none
+                           and state_attr(cover_entity, 'current_position') | int(101) < solar_heating_min_position }}
+                      - '{{ not shading_priority }}'
+                      - '{{ state_attr(cover_entity, ''current_position'') | int(101) < solar_heating_position }}'
+                    sequence:
+                      - action: input_boolean.turn_on
+                        target:
+                          entity_id: '{{ solar_heating_status_helper }}'
+                      - action: cover.set_cover_position
+                        target:
+                          entity_id: !input 'cover'
+                        data:
+                          position: !input 'solar_heating_position'
+                  - conditions:
+                      - '{{ is_state(solar_heating_status_helper, ''on'') }}'
+                      - |-
+                        {{ (not sun_in_window)
+                           or (temp_available and outdoor_temp >= (solar_heating_temp_threshold + solar_heating_temp_hysteresis))
+                           or night_mode_on or shading_priority }}
+                    sequence:
+                      - action: input_boolean.turn_off
+                        target:
+                          entity_id: '{{ solar_heating_status_helper }}'
       - conditions:
           - condition: trigger
             id: window_open_long
@@ -1576,33 +1467,10 @@ actions:
           - variables:
               night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
-          - variables:
-              night_temp_ok: true
-              night_forecast: {}
           - if:
-              - '{{ night_mode_on and weather_entity is string }}'
+              - '{{ night_mode_on }}'
             then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: night_forecast
-                continue_on_error: true
-              - variables:
-                  night_temp_ok: |-
-                    {% set fc = (night_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                    {% set today = namespace(entries=[]) %}
-                    {% for entry in fc %}
-                      {% set dt = as_datetime(entry.get('datetime'), none) %}
-                      {% if dt is not none and as_local(dt).date() == now().date() %}
-                        {% set today.entries = today.entries + [entry] %}
-                      {% endif %}
-                    {% endfor %}
-                    {% set fc = today.entries %}
-                    {% set low = (fc[0].get('templow') | float(none)) if fc else none %}
-                    {{ low is none or low <= night_temp_threshold }}
-          # The window may have closed while the forecast request was pending.
+              - *refresh_daily_forecast
           - condition: '{{ states(window_sensor) in ["on", "open"] }}'
           - if:
               - |-
@@ -1655,32 +1523,7 @@ actions:
             timeout:
               minutes: !input 'reclose_timeout'
             continue_on_timeout: true
-          - variables:
-              night_temp_ok: true
-              night_forecast: {}
-          - if:
-              - '{{ weather_entity is string }}'
-            then:
-              - action: weather.get_forecasts
-                target:
-                  entity_id: '{{ weather_entity }}'
-                data:
-                  type: daily
-                response_variable: night_forecast
-                continue_on_error: true
-              - variables:
-                  night_temp_ok: |-
-                    {% set fc = (night_forecast.get(weather_entity, {}) or {}).get('forecast') or [] %}
-                    {% set today = namespace(entries=[]) %}
-                    {% for entry in fc %}
-                      {% set dt = as_datetime(entry.get('datetime'), none) %}
-                      {% if dt is not none and as_local(dt).date() == now().date() %}
-                        {% set today.entries = today.entries + [entry] %}
-                      {% endif %}
-                    {% endfor %}
-                    {% set fc = today.entries %}
-                    {% set low = (fc[0].get('templow') | float(none)) if fc else none %}
-                    {{ low is none or low <= night_temp_threshold }}
+          - *refresh_daily_forecast
           - variables:
               night_mode_on_now: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               pause_now: |-
