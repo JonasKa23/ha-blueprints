@@ -4,34 +4,24 @@ A collection of Home Assistant automation blueprints.
 
 ## Automations
 
-### Intelligente Rollladensteuerung
+### Rollladensteuerung
 
-**File:** `automations/cover_automation_v2.yaml`
+**File:** `automations/cover_automation.yaml`
 
-Pro Fenster/Rollladen wird eine eigene Automation erstellt — gemeinsame Helfer
-(Uhrzeit, Nachtmodus) wählen alle Instanzen identisch aus.
+Pro Fenster/Rollladen wird eine eigene Automation mit einem binären Fensterkontakt erstellt.
+Gemeinsame Helfer (Uhrzeit, Nachtmodus) wählen alle Instanzen identisch aus.
 
-- Morgens öffnen (input_datetime-Helfer, abschaltbar)
-- Fenster-Interaktion (offen/gekippt → Position, mit Rückfahr-Logik)
-- Nachtmodus inkl. Lüftungsposition bei offenem Fenster
-- Sturmschutz (Wetter-Entität oder Wind-Sensor, optionaler Panzer-Modus) — hat immer Vorrang
-- Sonnenschutz/Beschattung anhand des Sonnenstands (Fenster-Geometrie, Temperatur-Schwelle
-  mit Hysterese, optionaler Wetterlagen-Filter, erkennt manuelle Eingriffe)
-- Sonnenheizen für die Heizperiode (öffnet vergessene Rollos bei Sonne und Kälte)
-- Moskito-Modus (Licht aus im Raum, wenn das Fenster nach Sonnenuntergang geöffnet wird)
-- Actionable Notifications bei zu lange offenen/gekippten Fenstern
+- Morgens öffnen und einstellbare Lüftungsposition mit Rückfahr-Logik
+- Abendmodus zu fester Uhrzeit und Sonnenuntergang mit Offset
+- Abend-/Nachtmodus anhand der vorhergesagten Tagestiefsttemperatur, mit eigenen Zielpositionen
+- Sonnenschutz anhand des Sonnenstands und der vorhergesagten Tageshöchsttemperatur
+- Sonnenheizen, Sturmschutz und Benachrichtigungen bei offenem Fenster
 
 Mindestversion: Home Assistant 2024.10.
 
-📖 **[Ausführliche Dokumentation](docs/cover_automation_v2.md)** — Einrichtung,
-Funktionsweise (Sichtfeld-Geometrie, manuelle Eingriffe, Prioritäten), bekannte
-Grenzen und FAQ.
+📖 **[Dokumentation und Umstellung](docs/cover_automation.md)**
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/TheRealSimon42/ha-blueprints/blob/main/automations/cover_automation_v2.yaml)
-
-> Hinweis: Die frühere Version (`cover_automation.yaml`, Zuordnung mehrerer Rollläden
-> über zwei parallele Listen) wurde entfernt. Bereits importierte Kopien laufen lokal
-> unverändert weiter; für Neues bitte die aktuelle Version oben verwenden.
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/JonasKa23/ha-blueprints/blob/main/automations/cover_automation.yaml)
 
 ### Synchronisiere Datum+Uhrzeit zu Uhrzeit-Helfer
 
