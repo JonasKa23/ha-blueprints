@@ -1,32 +1,44 @@
 blueprint:
   name: Rollladensteuerung (Sonnenschutz, Sonnenheizen, Abend- & Nachtmodus, Sturmschutz)
   description: |
-    Steuert einen einzelnen Rollladen anhand "seines" Fensters (einfacher Schließkontakt,
-    offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes Fenster (fährt nur
-    auf eine einstellbare Zielposition, nicht komplett auf) inkl. Rückfahr-Logik, Abendmodus
-    (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset, nur wenn die
-    laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet, mit frei
-    einstellbarer Zielposition), Nachtmodus (manuell per Helfer, ebenfalls anhand der
-    minimalen Tagestemperatur, mit frei einstellbarer Zielposition), Sturmschutz,
-    automatische Beschattung anhand des Sonnenstands (Sonnenschutz, geprüft gegen die
-    maximale Tagestemperatur, optional mit Filter nach Wetterlage) sowie Sonnenheizen
-    (öffnet in der Heizperiode heruntergelassene/vergessene Rollläden bei Sonne und Kälte).
+    Steuert einen einzelnen Rollladen mit binärem Fensterkontakt (offen/geschlossen):
+    morgendliches Öffnen, Lüftungsposition mit Rückfahr-Logik, Abend- und Nachtfahrten,
+    Sonnenschutz, Sonnenheizen und optionaler Sturmschutz. Alle Zielpositionen sind
+    einstellbar; 0 % bedeutet geschlossen, 100 % vollständig geöffnet.
 
-    Pro Fenster/Rollladen wird eine eigene Automation aus diesem Blueprint erstellt.
-    Gemeinsame Helfer (z.B. die input_datetime für morgens/abends oder der
-    Nachtmodus-Helfer) werden einfach in allen Instanzen identisch ausgewählt.
+    Der Abendmodus führt zu einer festen Uhrzeit und/oder zum Sonnenuntergang mit Offset
+    eine einzelne Fahrt aus. Beide Termine prüfen die Bedingungen erneut. Gefahren wird
+    nur bei geschlossenem Fenster, wenn der Nachtmodus noch nicht aktiv ist und die
+    vorhergesagte Tagestiefsttemperatur höchstens der eingestellten Schwelle entspricht.
+    Ein bereits weiter geschlossener Rollladen wird dabei nicht geöffnet.
+    Der Abendmodus benötigt keinen eigenen Status-Helfer und speichert keinen Zustand.
+    Bei offenem Fenster entfällt die Abendfahrt; sie wird später nicht eigens nachgeholt.
+    Nachtmodus und morgendliches Öffnen übernehmen über ihre jeweiligen Auslöser.
 
-    Der Abendmodus greift nur, solange der Nachtmodus noch nicht aktiv ist — ist der
-    Nachtmodus-Helfer bereits eingeschaltet, überspringt der Abendmodus seine Bewegung,
-    damit er die (meist tiefere) Nachtposition nicht wieder aufreißt.
+    Der Nachtmodus wird über einen gemeinsamen input_boolean-Helfer aktiviert und nutzt
+    eine eigene Temperatur-Schwelle sowie getrennte Positionen für geschlossene und offene
+    Fenster. Abend- und Nachtmodus prüfen die vorhergesagte Tagestiefsttemperatur für heute.
+    Fehlt dieser Wert, entfällt die Temperaturprüfung.
+
+    Sonnenschutz und Sonnenheizen verwenden die erwartete Tageshöchsttemperatur für heute:
+    aus einem optionalen Tageshöchsttemperatur-Sensor oder aus der Wettervorhersage.
+    Die Beschattung folgt dem Sonnenstand und führt innerhalb ihrer Temperatur-Hysterese
+    weiter nach. Sonnenheizen öffnet heruntergelassene Rollläden bei passendem Sonnenstand
+    und niedriger Tageshöchsttemperatur. Ohne gültigen Temperaturwert startet keines der
+    beiden Features. Beide benötigen jeweils einen eigenen Status-Helfer pro Rollladen.
+    Der Nachtmodus blockiert beide Sonnenfunktionen; die einmalige Abendfahrt setzt
+    dagegen keine dauerhafte Sperre gegen spätere Sonnenautomatik.
+
+    Pro Fenster/Rollladen wird eine eigene Automation erstellt. Gemeinsame Helfer für
+    Morgen-/Abendzeiten und Nachtmodus können in allen Instanzen identisch gewählt werden.
+    Bei Fensteröffnung wird nur bis zur Lüftungsposition geöffnet, sofern der Rollladen
+    aktuell weiter geschlossen ist. Innerhalb des Rückfahr-Zeitfensters kann anschließend
+    die Ausgangsposition wiederhergestellt werden.
 
     Basiert auf "s42 - Intelligente Rollladensteuerung V2" von TheRealSimon42, lokal
-    angepasst: kein Kipp-Zustand (reiner Schließkontakt), kein Moskito-Modus, ein
-    automatischer Abendmodus mit frei einstellbaren Zielpositionen für Abend- und Nachtmodus
-    (beide anhand der minimalen Tagestemperatur aus der Wettervorhersage, der Sonnenschutz
-    anhand der maximalen Tagestemperatur), eine einstellbare (statt fest volloffene)
-    Zielposition bei Fenster-Interaktion, sowie eine eigene Wetter-Sektion. 📖
-    [Dokumentation](https://github.com/JonasKa23/ha-blueprints/blob/main/docs/cover_automation.md)
+    angepasst für binäre Fensterkontakte, ohne Kipp-Erkennung und ohne Moskito-Modus.
+
+    📖 [Dokumentation](https://github.com/JonasKa23/ha-blueprints/blob/main/docs/cover_automation.md)
   domain: automation
   author: JonasKa23
   homeassistant:
@@ -483,8 +495,8 @@ blueprint:
       name: Sonnenheizen (Winter)
       description: |
         Das Gegenteil des Sonnenschutzes: Öffnet einen heruntergelassenen (z.B. vergessenen)
-        Rollladen automatisch, wenn die Sonne laut Sonnenstand ins Fenster scheint und es
-        draußen kalt ist — damit die Sonne kostenlos beim Aufheizen des Raums hilft. Nutzt
+        Rollladen automatisch, wenn die Sonne laut Sonnenstand ins Fenster scheint und eine
+        niedrige Tageshöchsttemperatur erwartet wird — damit die Sonne kostenlos beim Aufheizen des Raums hilft. Nutzt
         dieselbe Fensterausrichtung/Sichtfeld wie der Sonnenschutz (Abschnitt "Fenstergeometrie
         & Sonnenausrichtung"), läuft aber unabhängig davon, ob der Sonnenschutz selbst aktiviert
         ist. Der Sturmschutz hat immer Vorrang — bei Starkwind greift Sonnenheizen nicht. ⚠️
@@ -583,7 +595,9 @@ blueprint:
         Zielposition, sofern die minimale Tagestemperatur die Schwelle unterschreitet — sonst
         bleibt der Rollladen stehen (eine laufende Beschattung wird trotzdem beendet).
 
-        Der Abendmodus ist eine einmalige Fahrt ohne eigenen Status-Helfer. Bei offenem Fenster entfällt die Fahrt. Nachtmodus und morgendliches Öffnen übernehmen über ihre eigenen Auslöser.
+        Der Abendmodus ist eine einmalige Fahrt ohne eigenen Status-Helfer. Bei offenem Fenster
+        entfällt die Fahrt. Nachtmodus und morgendliches Öffnen übernehmen über ihre eigenen
+        Auslöser.
       icon: mdi:weather-night
       collapsed: true
       input:
