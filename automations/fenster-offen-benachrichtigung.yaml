@@ -6,16 +6,14 @@ blueprint:
     Erinnerung ans Schließen gewünscht ist. Wird das Fenster wieder geschlossen, verschwindet die
     Meldung automatisch vom Gerät.
 
-
     Pro Fenster wird eine eigene Automation aus diesem Blueprint erstellt.
-
 
     Herausgelöst aus dem Benachrichtigungsteil der Rollladensteuerung (Sonnenschutz, Sonnenheizen,
     Abend- & Nachtmodus, Sturmschutz) für Fenster ohne motorisierten Rollladen.
   domain: automation
   author: JonasKa23
   homeassistant:
-    min_version: 2024.10.0
+    min_version: 2026.9.3
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/fenster-offen-benachrichtigung.yaml
   input:
     assignment_section:
@@ -58,12 +56,12 @@ blueprint:
                 - integration: mobile_app
         notification_timeout:
           name: Benachrichtigung nach X Min. (Fenster offen)
-          default: 45
+          default: 10
           selector:
             number:
-              min: 5.0
-              max: 240.0
-              step: 1.0
+              min: 5
+              max: 240
+              step: 1
               mode: slider
               unit_of_measurement: Minuten
         use_area_name:
