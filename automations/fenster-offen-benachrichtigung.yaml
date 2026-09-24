@@ -1,0 +1,170 @@
+blueprint:
+  name: Fenster offen – Benachrichtigung (ohne Rollladen)
+  description: >
+    Schickt eine Benachrichtigung, wenn ein Fenster zu lange offen ist — ohne einen Rollladen zu
+    steuern. Für Fenster mit manuellem Rollladen (oder ganz ohne Rollladen), bei denen nur die
+    Erinnerung ans Schließen gewünscht ist. Wird das Fenster wieder geschlossen, verschwindet die
+    Meldung automatisch vom Gerät.
+
+
+    Pro Fenster wird eine eigene Automation aus diesem Blueprint erstellt.
+
+
+    Herausgelöst aus dem Benachrichtigungsteil der Rollladensteuerung (Sonnenschutz, Sonnenheizen,
+    Abend- & Nachtmodus, Sturmschutz) für Fenster ohne motorisierten Rollladen.
+  domain: automation
+  author: JonasKa23
+  homeassistant:
+    min_version: 2024.10.0
+  source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/fenster-offen-benachrichtigung.yaml
+  input:
+    assignment_section:
+      name: Zuordnung
+      description: Der Fenstersensor, den diese Automation überwacht.
+      icon: mdi:vector-link
+      input:
+        window_sensor:
+          name: Fenstersensor
+          description: >
+            Der Fensterkontakt. Es wird ein einfacher binärer Schließkontakt erwartet
+            (offen/geschlossen). Hinweis: Der Sensor erscheint in der Auswahl nur mit passender
+            Geräteklasse (Tür, Fenster, Öffnung oder Garagentor) — die lässt sich in den
+            Einstellungen der Entität nachrüsten.
+          selector:
+            entity:
+              domain:
+                - binary_sensor
+              device_class:
+                - door
+                - window
+                - opening
+                - garage_door
+              multiple: false
+              reorder: false
+    notification_section:
+      name: Benachrichtigungen
+      description: >
+        Benachrichtigung bei zu lange offenem Fenster. Wird das Fenster geschlossen, verschwindet
+        die Meldung automatisch vom Gerät.
+      icon: mdi:bell
+      input:
+        notification_device:
+          name: Benachrichtigungs-Geräte
+          description: Geräte mit der Home Assistant Companion App.
+          selector:
+            device:
+              multiple: true
+              filter:
+                - integration: mobile_app
+        notification_timeout:
+          name: Benachrichtigung nach X Min. (Fenster offen)
+          default: 45
+          selector:
+            number:
+              min: 5.0
+              max: 240.0
+              step: 1.0
+              mode: slider
+              unit_of_measurement: Minuten
+        use_area_name:
+          name: Bereichsnamen in Benachrichtigungen verwenden
+          description: Wenn aktiviert, wird der Bereichsname (z.B. "Wohnzimmer") statt des Sensor-Namens
+            verwendet.
+          default: false
+          selector:
+            boolean: {}
+        sleep_mode_boolean:
+          name: Schlafmodus-Helfer (optional)
+          description: Wenn dieser input_boolean 'on' ist, werden keine Benachrichtigungen gesendet.
+          default: []
+          selector:
+            entity:
+              domain:
+                - input_boolean
+              multiple: false
+              reorder: false
+mode: parallel
+max: 10
+variables:
+  window_sensor: !input window_sensor
+  sleep_mode_boolean: !input sleep_mode_boolean
+  use_area_name: !input use_area_name
+  notification_timeout: !input notification_timeout
+  notification_device: !input notification_device
+  notification_tag: "{{ 'fenster_offen_' ~ (window_sensor | slugify) }}"
+  device_name_map: |
+    {% set ns = namespace(device_names=[]) %} {% for device_id in notification_device %}
+      {% set device_name = device_attr(device_id, "name") %}
+      {% if device_name %}
+        {% set ns.device_names = ns.device_names + ["mobile_app_" + device_name | slugify] %}
+      {% endif %}
+    {% endfor %} {{ ns.device_names }}
+triggers:
+  - trigger: state
+    entity_id: !input window_sensor
+    to:
+      - "on"
+      - open
+    for:
+      minutes: !input notification_timeout
+    id: window_open_long
+  - trigger: state
+    entity_id: !input window_sensor
+    to:
+      - "off"
+      - closed
+    for:
+      seconds: 2
+    id: window_closed
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: window_open_long
+          - "{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, 'on')) }}"
+          - '{{ device_name_map | length > 0 }}'
+        sequence:
+          - variables:
+              has_area: '{{ use_area_name and area_name(window_sensor) is not none }}'
+              window_label: |-
+                {%- if has_area -%}
+                  {{ area_name(window_sensor) }}
+                {%- else -%}
+                  {{ state_attr(window_sensor, 'friendly_name') or window_sensor }}
+                {%- endif -%}
+              title_text: |-
+                {%- if has_area -%}
+                  Fenster offen in {{ window_label }}
+                {%- else -%}
+                  Fenster offen
+                {%- endif -%}
+              message_text: |-
+                {%- if has_area -%}
+                  Das Fenster im Bereich '{{ window_label }}' ist seit über {{ notification_timeout }} Minuten offen.
+                {%- else -%}
+                  Fenster '{{ window_label }}' ist seit über {{ notification_timeout }} Minuten offen.
+                {%- endif -%}
+          - repeat:
+              for_each: '{{ device_name_map }}'
+              sequence:
+                - action: notify.{{ repeat.item }}
+                  continue_on_error: true
+                  data:
+                    title: '{{ title_text }}'
+                    message: '{{ message_text }}'
+                    data:
+                      tag: '{{ notification_tag }}'
+      - conditions:
+          - condition: trigger
+            id: window_closed
+          - '{{ device_name_map | length > 0 }}'
+        sequence:
+          - repeat:
+              for_each: '{{ device_name_map }}'
+              sequence:
+                - action: notify.{{ repeat.item }}
+                  continue_on_error: true
+                  data:
+                    message: clear_notification
+                    data:
+                      tag: '{{ notification_tag }}'
