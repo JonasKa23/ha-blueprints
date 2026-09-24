@@ -1,11 +1,11 @@
 blueprint:
   name: Rollladensteuerung (Sonnenschutz, Sonnenheizen, Abend- & Nachtmodus, Sturmschutz)
   description: |
-    Steuert einen einzelnen Rollladen anhand "seines" Fensters (einfacher Schließkontakt,
-    offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes Fenster (fährt nur
-    auf eine einstellbare Zielposition, nicht komplett auf) inkl. Rückfahr-Logik, Abendmodus
-    (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset, nur wenn die
-    laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet, mit frei
+    Steuert einen einzelnen Rollladen anhand "seines" Fensters (einfacher Schließkontakt, 
+    offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes Fenster (fährt nur 
+    auf eine einstellbare Zielposition, nicht komplett auf) inkl. Rückfahr-Logik, Abendmodus 
+    (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset, nur wenn die 
+    laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet, mit frei 
     einstellbarer Zielposition), Nachtmodus (manuell per Helfer, ebenfalls anhand der
     minimalen Tagestemperatur, mit frei einstellbarer Zielposition), Sturmschutz,
     automatische Beschattung anhand des Sonnenstands (Sonnenschutz, geprüft gegen die
@@ -133,7 +133,7 @@ blueprint:
             gekippt) wird — tagsüber und außerhalb des Nachtmodus. Es wird nur gefahren, wenn der
             Rollladen geschlossener ist als diese Position. 100 % würde den Rollladen komplett
             hochfahren.
-          default: 20
+          default: 35
           selector:
             number:
               min: 0
@@ -197,7 +197,7 @@ blueprint:
             wenn auf dieser Seite ein Hindernis die Sonne blockiert (tiefe Laibung, Balkon,
             Nachbarhaus). Links/rechts gilt von innen am Fenster stehend mit Blick nach draußen —
             bei einem Südfenster ist links die Vormittagsseite (Osten).
-          default: 90
+          default: 60
           selector:
             number:
               min: 0
@@ -210,7 +210,7 @@ blueprint:
           description: |
             Wie Sichtfeld links, nur rechts der Fensterausrichtung — bei einem Südfenster die
             Nachmittags-/Abendseite (Westen).
-          default: 90
+          default: 60
           selector:
             number:
               min: 0
@@ -422,7 +422,7 @@ blueprint:
           description: |
             Beschattet wird nur, wenn die geprüfte Temperatur (eigener Sensor bzw. maximale
             Tagestemperatur laut Vorhersage) über diesem Wert liegt.
-          default: 25
+          default: 23
           selector:
             number:
               min: 10
@@ -448,7 +448,7 @@ blueprint:
           description: |
             Der Rollladen wird beim Nachführen nur bewegt, wenn sich die Zielposition um mindestens
             diesen Wert von der aktuellen unterscheidet (schont den Motor).
-          default: 5
+          default: 8
           selector:
             number:
               min: 1
@@ -693,7 +693,7 @@ blueprint:
           description: |
             Position (in %), auf die nachts (Nachtmodus-Helfer aktiv) gefahren wird, solange das
             Fenster offen ist.
-          default: 15
+          default: 10
           selector:
             number:
               min: 0
@@ -819,7 +819,7 @@ blueprint:
                 - integration: mobile_app
         notification_timeout:
           name: Benachrichtigung nach X Min. (Fenster offen)
-          default: 45
+          default: 20
           selector:
             number:
               min: 5
