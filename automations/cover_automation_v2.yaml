@@ -1,7 +1,33 @@
 blueprint:
-  name: s42 - Intelligente Rollladensteuerung V2 (ein Rollladen pro Automation)
+  name: Intelligente Rollladensteuerung (ein Rollladen pro Automation)
   description: >
-    Steuert einen einzelnen Rollladen anhand "seines" Fensters: morgendliches Öffnen,
+    Steuert einen einzelnen Rollladen anhand \"seines\" Fensters (einfacher
+    Schließkontakt, offen/geschlossen): morgendliches Öffnen, Reaktion auf ein geöffnetes
+    Fenster (fährt nur auf eine einstellbare Zielposition, nicht komplett auf) inkl.
+    Rückfahr-Logik, Abendmodus (automatisches Schließen zu fester Uhrzeit oder Sonnenuntergang+Offset,
+    nur wenn die laut Wettervorhersage minimale Tagestemperatur eine Schwelle unterschreitet,
+    mit frei einstellbarer Zielposition), Nachtmodus (manuell per Helfer, ebenfalls
+    anhand der minimalen Tagestemperatur, mit frei einstellbarer Zielposition), Sturmschutz,
+    automatische Beschattung anhand des Sonnenstands (Sonnenschutz, geprüft gegen
+    die maximale Tagestemperatur, optional mit Filter nach Wetterlage) sowie Sonnenheizen
+    (öffnet in der Heizperiode heruntergelassene/vergessene Rollläden bei Sonne und
+    Kälte).
+    
+    Pro Fenster/Rollladen wird eine eigene Automation aus diesem Blueprint
+    erstellt. Gemeinsame Helfer (z.B. die input_datetime für morgens/abends oder der
+    Nachtmodus-Helfer) werden einfach in allen Instanzen identisch ausgewählt.
+    
+    Der Abendmodus greift nur, solange der Nachtmodus noch nicht aktiv ist — ist der Nachtmodus-Helfer
+    bereits eingeschaltet, überspringt der Abendmodus seine Bewegung, damit er die
+    (meist tiefere) Nachtposition nicht wieder aufreißt.
+    
+    Basiert auf \"s42 - Intelligente
+    Rollladensteuerung V2\" von TheRealSimon42, lokal angepasst: kein Kipp-Zustand
+    (reiner Schließkontakt), kein Moskito-Modus, ein automatischer Abendmodus mit
+    frei einstellbaren Zielpositionen für Abend- und Nachtmodus (beide anhand der
+    minimalen Tagestemperatur aus der Wettervorhersage, der Sonnenschutz anhand der
+    maximalen Tagestemperatur), eine einstellbare (statt fest volloffene) Zielposition
+    bei Fenster-Interaktion, sowie eine eigene Wetter-Sektion.Steuert einen einzelnen Rollladen anhand "seines" Fensters: morgendliches Öffnen,
     Reaktion auf gekippte/geöffnete Fenster inkl. Rückfahr-Logik, Nachtmodus, Sturmschutz,
     automatische Beschattung anhand des Sonnenstands (Sonnenschutz, optional mit Filter
     nach Wetterlage), Sonnenheizen (das Gegenteil: öffnet in der Heizperiode
@@ -16,10 +42,10 @@ blueprint:
 
     📖 [Ausführliche Dokumentation & FAQ](https://github.com/TheRealSimon42/ha-blueprints/blob/main/docs/cover_automation_v2.md)
   domain: automation
-  author: TheRealSimon42
+  author: JonasKa23
   homeassistant:
     min_version: "2024.10.0"
-  source_url: https://raw.githubusercontent.com/TheRealSimon42/ha-blueprints/main/automations/cover_automation_v2.yaml
+  source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/cover_automation_v2.yaml
   input:
     assignment_section:
       name: Zuordnung
