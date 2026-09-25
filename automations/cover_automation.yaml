@@ -861,17 +861,6 @@ blueprint:
                     device:
                       filter:
                         - integration: mobile_app
-        notification_person:
-          name: Person bei nur einem Gerät (optional)
-          description: >
-            Bisherige Einzelauswahl. Wird nur verwendet, wenn genau ein Benachrichtigungsgerät
-            ausgewählt ist und dafür kein Eintrag unter „Personen je Benachrichtigungsgerät“
-            existiert. Bei mehreren Geräten bitte die Zuordnungsliste verwenden.
-          default: []
-          selector:
-            entity:
-              domain: person
-              multiple: false
         notification_timeout:
           name: Benachrichtigung nach X Min. (Fenster offen)
           default: 20
@@ -955,7 +944,6 @@ variables:
   notification_timeout: !input 'notification_timeout'
   notification_device: !input 'notification_device'
   notification_only_when_home: !input 'notification_only_when_home'
-  notification_person: !input 'notification_person'
   notification_device_persons: !input notification_device_persons
   action_id: '{{ ''CLOSE_SHUTTER__'' ~ window_sensor }}'
   notification_tag: '{{ ''fenster_offen_'' ~ (window_sensor | slugify) }}'
@@ -1501,10 +1489,6 @@ actions:
                          | selectattr('device', 'eq', repeat.item.device) | list %}
                       {% set persons = matches | selectattr('person', 'defined')
                          | map(attribute='person') | unique | list %}
-                      {% if matches | length == 0 and notification_device | length == 1
-                            and notification_person is string %}
-                        {% set persons = [notification_person] %}
-                      {% endif %}
                       {{ persons | length == 1 and persons[0] is string
                          and is_state(persons[0], 'home') }}
                     {% endif %}

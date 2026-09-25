@@ -84,10 +84,7 @@ bzw. nicht verfügbarem Personenstatus wird das betreffende Gerät übersprungen
 Bei späterer Heimkehr wird keine Nachricht nachgeholt. Bereits gesendete Meldungen
 werden beim Schließen des Fensters weiterhin auf allen ausgewählten Geräten entfernt.
 
-Die bisherige **Person bei nur einem Gerät** bleibt für bestehende Automationen mit
-genau einem Gerät nutzbar, wenn dieses keinen Eintrag in der Zuordnungsliste hat.
-Bei mehreren Geräten wird diese Einzelauswahl ignoriert: Bitte die Zuordnungsliste
-befüllen, damit eine anwesende Person keine Nachricht an fremde Geräte freigibt.
+Auch bei nur einem Gerät wird die Person über die Zuordnungsliste festgelegt.
 
 Die Zuordnung verwendet ein Formular mit wiederholbaren Einträgen
 ([Home-Assistant-Objektselektor](https://www.home-assistant.io/docs/blueprint/selectors/#object-selector)).

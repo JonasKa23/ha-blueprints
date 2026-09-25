@@ -19,7 +19,7 @@ BLUEPRINTS = ('cover_automation.yaml', 'fenster-offen-benachrichtigung.yaml')
 
 class NotificationRecipientsTests(unittest.TestCase):
     def recipients(self, filename, states, *, enabled=True, devices=None,
-                   mappings=None, legacy=None, trigger='window_open_long'):
+                   mappings=None, trigger='window_open_long'):
         doc = yaml.load((ROOT / 'automations' / filename).read_text(), Loader=Loader)
         env = NativeEnvironment(undefined=StrictUndefined)
         env.filters['slugify'] = lambda value: value.lower().replace(' ', '_')
@@ -34,7 +34,6 @@ class NotificationRecipientsTests(unittest.TestCase):
                 {'person': 'person.anna', 'device': 'anna'},
             ],
             notification_only_when_home=enabled,
-            notification_person=legacy if legacy is not None else [],
             sleep_mode_boolean=[],
         )
         def render(template):
@@ -87,7 +86,7 @@ class NotificationRecipientsTests(unittest.TestCase):
             ]):
                 with self.subTest(blueprint=filename, mappings=mappings):
                     self.assertEqual(self.recipients(filename, {'person.anna': 'home'},
-                                                    mappings=mappings, legacy='person.anna'), [])
+                                                    mappings=mappings), [])
 
     def test_one_person_can_receive_on_multiple_devices(self):
         for filename in BLUEPRINTS:
@@ -103,11 +102,14 @@ class NotificationRecipientsTests(unittest.TestCase):
                     self.assertEqual(self.recipients(filename, {}, **options),
                                      ['notify.mobile_app_anna', 'notify.mobile_app_ben'])
 
-    def test_single_device_legacy_selection_and_explicit_override(self):
+    def test_single_device_requires_explicit_mapping(self):
         for filename in BLUEPRINTS:
-            options = dict(devices=['anna'], legacy='person.anna')
+            options = dict(devices=['anna'])
             self.assertEqual(self.recipients(filename, {'person.anna': 'home'},
-                                            mappings=[], **options), ['notify.mobile_app_anna'])
+                                            mappings=[], **options), [])
+            self.assertEqual(self.recipients(filename, {'person.anna': 'home'}, mappings=[
+                {'device': 'anna', 'person': 'person.anna'},
+            ], **options), ['notify.mobile_app_anna'])
             self.assertEqual(self.recipients(filename, {'person.anna': 'home'}, mappings=[
                 {'device': 'anna', 'person': 'person.ben'},
             ], **options), [])
