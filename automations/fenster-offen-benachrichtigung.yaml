@@ -68,7 +68,7 @@ blueprint:
           name: Bereichsnamen in Benachrichtigungen verwenden
           description: Wenn aktiviert, wird der Bereichsname (z.B. "Wohnzimmer") statt des Sensor-Namens
             verwendet.
-          default: false
+          default: true
           selector:
             boolean: {}
         sleep_mode_boolean:

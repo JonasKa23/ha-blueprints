@@ -183,7 +183,7 @@ blueprint:
         hier gesetzt werden.
 
         Zur Bedeutung von Ausrichtung und Sichtfeld: ![Erklärgrafik
-        Sichtfeld](https://cdn.jsdelivr.net/gh/TheRealSimon42/ha-blueprints@main/images/sichtfeld_beschattung.svg)
+        Sichtfeld](https://github.com/JonasKa23/ha-blueprints/blob/main/images/sichtfeld_beschattung.svg)
       icon: mdi:sun-compass
       collapsed: true
       input:
@@ -842,7 +842,7 @@ blueprint:
           description: |
             Wenn aktiviert, wird der Bereichsname (z.B. "Wohnzimmer") statt des Sensor-Namens
             verwendet.
-          default: false
+          default: true
           selector:
             boolean: {}
         sleep_mode_boolean:
