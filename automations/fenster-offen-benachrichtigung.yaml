@@ -54,6 +54,25 @@ blueprint:
               multiple: true
               filter:
                 - integration: mobile_app
+        notification_only_when_home:
+          name: Nur benachrichtigen, wenn die Person zuhause ist
+          description: >
+            Prüft nach Ablauf der Wartezeit, ob die unten ausgewählte Person zuhause ist.
+            Gilt für alle ausgewählten Benachrichtigungs-Geräte. Bei späterer Heimkehr
+            wird keine Benachrichtigung nachgeholt.
+          default: false
+          selector:
+            boolean: {}
+        notification_person:
+          name: Person für die Anwesenheitsprüfung (optional)
+          description: >
+            Wird nur bei eingeschalteter Anwesenheitsprüfung benötigt. Ist keine Person
+            ausgewählt oder ihr Standort unbekannt, wird dann keine Benachrichtigung gesendet.
+          default: []
+          selector:
+            entity:
+              domain: person
+              multiple: false
         notification_timeout:
           name: Benachrichtigung nach X Min. (Fenster offen)
           default: 10
@@ -89,6 +108,8 @@ variables:
   use_area_name: !input use_area_name
   notification_timeout: !input notification_timeout
   notification_device: !input notification_device
+  notification_only_when_home: !input notification_only_when_home
+  notification_person: !input notification_person
   notification_tag: "{{ 'fenster_offen_' ~ (window_sensor | slugify) }}"
   device_name_map: |
     {% set ns = namespace(device_names=[]) %} {% for device_id in notification_device %}
@@ -119,6 +140,9 @@ actions:
       - conditions:
           - condition: trigger
             id: window_open_long
+          - >-
+            {{ not notification_only_when_home
+               or (notification_person is string and is_state(notification_person, 'home')) }}
           - "{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, 'on')) }}"
           - '{{ device_name_map | length > 0 }}'
         sequence:

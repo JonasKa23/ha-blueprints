@@ -67,6 +67,20 @@ Bei erzwungener Beschattung bestimmt `shading_min_position` den Mindestspalt, au
 offenem Fenster. Der Standard ist 25 %; ein eingestellter Wert von 0 % lässt vollständiges Schließen zu; für Terrassentüren
 ist diese Option wegen Aussperr-Gefahr nicht empfohlen.
 
+## Benachrichtigungen bei Anwesenheit
+
+Unter **Benachrichtigungen** lässt sich **Nur benachrichtigen, wenn die Person zuhause ist**
+einschalten und eine Person auswählen. Standardmäßig ist die Prüfung ausgeschaltet.
+Bei aktivierter Prüfung wird die Fenster-Erinnerung nur gesendet, wenn die gewählte
+Person nach Ablauf der Wartezeit den Status `home` hat. Diese Bedingung gilt für alle
+ausgewählten Benachrichtigungs-Geräte. Ohne Personenauswahl oder bei unbekanntem bzw.
+nicht verfügbarem Status wird keine Erinnerung gesendet. Bei späterer Heimkehr wird
+sie nicht nachgeholt. Bereits gesendete Meldungen werden beim Schließen des Fensters
+weiterhin unabhängig von der Anwesenheit entfernt.
+
+Die gleichen Einstellungen gibt es im Blueprint
+`automations/fenster-offen-benachrichtigung.yaml` für Fenster ohne motorisierten Rollladen.
+
 ## Bekannte Grenzen
 
 Die Automation läuft parallel, damit Fenster-Wartezeiten andere Funktionen nicht blockieren.
