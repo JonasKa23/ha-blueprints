@@ -69,14 +69,28 @@ ist diese Option wegen Aussperr-Gefahr nicht empfohlen.
 
 ## Benachrichtigungen bei Anwesenheit
 
-Unter **Benachrichtigungen** lässt sich **Nur benachrichtigen, wenn die Person zuhause ist**
-einschalten und eine Person auswählen. Standardmäßig ist die Prüfung ausgeschaltet.
-Bei aktivierter Prüfung wird die Fenster-Erinnerung nur gesendet, wenn die gewählte
-Person nach Ablauf der Wartezeit den Status `home` hat. Diese Bedingung gilt für alle
-ausgewählten Benachrichtigungs-Geräte. Ohne Personenauswahl oder bei unbekanntem bzw.
-nicht verfügbarem Status wird keine Erinnerung gesendet. Bei späterer Heimkehr wird
-sie nicht nachgeholt. Bereits gesendete Meldungen werden beim Schließen des Fensters
-weiterhin unabhängig von der Anwesenheit entfernt.
+Unter **Benachrichtigungen** lässt sich **Nur Personen benachrichtigen, die zuhause sind**
+einschalten. Standardmäßig ist die Prüfung ausgeschaltet. Wähle die gewünschten
+**Benachrichtigungs-Geräte** aus und füge unter **Personen je Benachrichtigungsgerät**
+für jedes Gerät einen Eintrag mit seiner Person hinzu. Eine Person kann mehrere Geräte
+haben. Die Zuordnung erfolgt ausdrücklich über das Gerät, nicht über die Reihenfolge
+in den Auswahllisten.
+
+Bei aktivierter Prüfung wird unmittelbar vor jeder Nachricht nur die zu diesem Gerät
+gehörende Person geprüft. Beispiel: Anna ist zuhause, Ben unterwegs → nur Annas Gerät
+erhält die Erinnerung. Sind beide zuhause, erhalten beide die Nachricht; ist niemand
+zuhause, erhält niemand eine Nachricht. Ohne eindeutige Zuordnung oder bei unbekanntem
+bzw. nicht verfügbarem Personenstatus wird das betreffende Gerät übersprungen.
+Bei späterer Heimkehr wird keine Nachricht nachgeholt. Bereits gesendete Meldungen
+werden beim Schließen des Fensters weiterhin auf allen ausgewählten Geräten entfernt.
+
+Die bisherige **Person bei nur einem Gerät** bleibt für bestehende Automationen mit
+genau einem Gerät nutzbar, wenn dieses keinen Eintrag in der Zuordnungsliste hat.
+Bei mehreren Geräten wird diese Einzelauswahl ignoriert: Bitte die Zuordnungsliste
+befüllen, damit eine anwesende Person keine Nachricht an fremde Geräte freigibt.
+
+Die Zuordnung verwendet ein Formular mit wiederholbaren Einträgen
+([Home-Assistant-Objektselektor](https://www.home-assistant.io/docs/blueprint/selectors/#object-selector)).
 
 Die gleichen Einstellungen gibt es im Blueprint
 `automations/fenster-offen-benachrichtigung.yaml` für Fenster ohne motorisierten Rollladen.

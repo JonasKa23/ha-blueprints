@@ -828,19 +828,45 @@ blueprint:
               filter:
                 - integration: mobile_app
         notification_only_when_home:
-          name: Nur benachrichtigen, wenn die Person zuhause ist
+          name: Nur Personen benachrichtigen, die zuhause sind
           description: >
-            Prüft nach Ablauf der Wartezeit, ob die unten ausgewählte Person zuhause ist.
-            Gilt für alle ausgewählten Benachrichtigungs-Geräte. Bei späterer Heimkehr
-            wird keine Benachrichtigung nachgeholt.
+            Prüft für jedes ausgewählte Gerät einzeln, ob seine zugeordnete Person
+            zuhause ist. Geräte ohne eindeutige Zuordnung werden übersprungen.
+            Bei späterer Heimkehr wird keine Benachrichtigung nachgeholt.
           default: false
           selector:
             boolean: {}
-        notification_person:
-          name: Person für die Anwesenheitsprüfung (optional)
+        notification_device_persons:
+          name: Personen je Benachrichtigungsgerät
           description: >
-            Wird nur bei eingeschalteter Anwesenheitsprüfung benötigt. Ist keine Person
-            ausgewählt oder ihr Standort unbekannt, wird dann keine Benachrichtigung gesendet.
+            Füge für jedes oben ausgewählte Gerät einen Eintrag mit der zugehörigen Person
+            hinzu. Eine Person darf mehrere Geräte haben; jedes Gerät darf nur einer Person
+            zugeordnet sein. Die Prüfung verwendet den Zuhause-Status der jeweiligen Person.
+          default: []
+          selector:
+            object:
+              multiple: true
+              label_field: person
+              fields:
+                person:
+                  label: Person
+                  required: true
+                  selector:
+                    entity:
+                      domain: person
+                device:
+                  label: Benachrichtigungsgerät
+                  required: true
+                  selector:
+                    device:
+                      filter:
+                        - integration: mobile_app
+        notification_person:
+          name: Person bei nur einem Gerät (optional)
+          description: >
+            Bisherige Einzelauswahl. Wird nur verwendet, wenn genau ein Benachrichtigungsgerät
+            ausgewählt ist und dafür kein Eintrag unter „Personen je Benachrichtigungsgerät“
+            existiert. Bei mehreren Geräten bitte die Zuordnungsliste verwenden.
           default: []
           selector:
             entity:
@@ -930,13 +956,15 @@ variables:
   notification_device: !input 'notification_device'
   notification_only_when_home: !input 'notification_only_when_home'
   notification_person: !input 'notification_person'
+  notification_device_persons: !input notification_device_persons
   action_id: '{{ ''CLOSE_SHUTTER__'' ~ window_sensor }}'
   notification_tag: '{{ ''fenster_offen_'' ~ (window_sensor | slugify) }}'
   device_name_map: |
     {% set ns = namespace(device_names=[]) %} {% for device_id in notification_device %}
       {% set device_name = device_attr(device_id, "name") %}
       {% if device_name %}
-        {% set ns.device_names = ns.device_names + ["mobile_app_" + device_name | slugify] %}
+        {% set ns.device_names = ns.device_names + [dict(device=device_id,
+          service="mobile_app_" + device_name | slugify)] %}
       {% endif %}
     {% endfor %} {{ ns.device_names }}
   shading_enabled: !input 'shading_enabled'
@@ -1437,9 +1465,6 @@ actions:
       - conditions:
           - condition: trigger
             id: window_open_long
-          - >-
-            {{ not notification_only_when_home
-               or (notification_person is string and is_state(notification_person, 'home')) }}
           - '{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, ''on'')) }}'
           - '{{ device_name_map | length > 0 }}'
         sequence:
@@ -1466,7 +1491,24 @@ actions:
           - repeat:
               for_each: '{{ device_name_map }}'
               sequence:
-                - action: notify.{{ repeat.item }}
+                - condition: template
+                  value_template: >-
+                    {% if not notification_only_when_home %}
+                      {{ true }}
+                    {% else %}
+                      {% set matches = notification_device_persons
+                         | selectattr('device', 'defined')
+                         | selectattr('device', 'eq', repeat.item.device) | list %}
+                      {% set persons = matches | selectattr('person', 'defined')
+                         | map(attribute='person') | unique | list %}
+                      {% if matches | length == 0 and notification_device | length == 1
+                            and notification_person is string %}
+                        {% set persons = [notification_person] %}
+                      {% endif %}
+                      {{ persons | length == 1 and persons[0] is string
+                         and is_state(persons[0], 'home') }}
+                    {% endif %}
+                - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
                     title: '{{ title_text }}'
@@ -1484,7 +1526,7 @@ actions:
           - repeat:
               for_each: '{{ device_name_map }}'
               sequence:
-                - action: notify.{{ repeat.item }}
+                - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
                     message: clear_notification
