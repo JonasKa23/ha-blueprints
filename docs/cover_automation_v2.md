@@ -1,5 +1,9 @@
 # Intelligente Rollladensteuerung — Dokumentation
 
+> Historische Dokumentation des ursprünglichen V2-Blueprints von TheRealSimon42.
+> Für die aktuelle lokale Anpassung ohne Sonnenheizen und Sturmschutz gilt die
+> [Dokumentation der Rollladensteuerung](cover_automation.md).
+
 **Blueprint:** `automations/cover_automation_v2.yaml` · Mindestversion: Home Assistant 2024.10
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/TheRealSimon42/ha-blueprints/blob/main/automations/cover_automation_v2.yaml)

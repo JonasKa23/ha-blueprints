@@ -9,13 +9,14 @@ A collection of Home Assistant automation blueprints.
 **File:** `automations/cover_automation.yaml`
 
 Pro Fenster/Rollladen wird eine eigene Automation mit einem binären Fensterkontakt erstellt.
-Gemeinsame Helfer (Uhrzeit, Nachtmodus) wählen alle Instanzen identisch aus.
+Gemeinsame Helfer (Uhrzeit, Nachtmodus, Sonnenschutz-Freigabe) wählen alle Instanzen identisch aus.
 
 - Morgens öffnen und einstellbare Lüftungsposition mit Rückfahr-Logik
 - Abendmodus zu fester Uhrzeit und Sonnenuntergang mit Offset
 - Abend-/Nachtmodus anhand der vorhergesagten Tagestiefsttemperatur, mit eigenen Zielpositionen
-- Sonnenschutz anhand des Sonnenstands und der vorhergesagten Tageshöchsttemperatur
-- Sonnenheizen, Sturmschutz und Benachrichtigungen bei offenem Fenster
+- Sonnenschutz anhand des Sonnenstands und der vorhergesagten Tageshöchsttemperatur,
+  mit optionalem globalem Freigabe-Schalter
+- Benachrichtigungen bei offenem Fenster
 
 Mindestversion: Home Assistant 2024.10.
 

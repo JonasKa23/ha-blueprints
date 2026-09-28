@@ -1,10 +1,10 @@
 blueprint:
-  name: Rollladensteuerung (Sonnenschutz, Sonnenheizen, Abend- & Nachtmodus, Sturmschutz)
+  name: Rollladensteuerung (Sonnenschutz, Abend- & Nachtmodus)
   description: |
     Steuert einen einzelnen Rollladen mit binärem Fensterkontakt (offen/geschlossen):
-    morgendliches Öffnen, Lüftungsposition mit Rückfahr-Logik, Abend- und Nachtfahrten,
-    Sonnenschutz, Sonnenheizen und optionaler Sturmschutz. Alle Zielpositionen sind
-    einstellbar; 0 % bedeutet geschlossen, 100 % vollständig geöffnet.
+    morgendliches Öffnen, Lüftungsposition mit Rückfahr-Logik, Abend- und Nachtfahrten
+    und Sonnenschutz. Alle Zielpositionen sind einstellbar;
+    0 % bedeutet geschlossen, 100 % vollständig geöffnet.
 
     Der Abendmodus führt zu einer festen Uhrzeit und/oder zum Sonnenuntergang mit Offset
     eine einzelne Fahrt aus. Beide Termine prüfen die Bedingungen erneut. Gefahren wird
@@ -20,14 +20,15 @@ blueprint:
     Fenster. Abend- und Nachtmodus prüfen die vorhergesagte Tagestiefsttemperatur für heute.
     Fehlt dieser Wert, entfällt die Temperaturprüfung.
 
-    Sonnenschutz und Sonnenheizen verwenden die erwartete Tageshöchsttemperatur für heute:
+    Der Sonnenschutz verwendet die erwartete Tageshöchsttemperatur für heute:
     aus einem optionalen Tageshöchsttemperatur-Sensor oder aus der Wettervorhersage.
     Die Beschattung folgt dem Sonnenstand und führt innerhalb ihrer Temperatur-Hysterese
-    weiter nach. Sonnenheizen öffnet heruntergelassene Rollläden bei passendem Sonnenstand
-    und niedriger Tageshöchsttemperatur. Ohne gültigen Temperaturwert startet keines der
-    beiden Features. Beide benötigen jeweils einen eigenen Status-Helfer pro Rollladen.
-    Der Nachtmodus blockiert beide Sonnenfunktionen; die einmalige Abendfahrt setzt
-    dagegen keine dauerhafte Sperre gegen spätere Sonnenautomatik.
+    weiter nach. Ohne gültigen Temperaturwert startet keine Beschattung. Jeder Rollladen
+    benötigt einen eigenen Status-Helfer. Ein optionaler gemeinsamer Freigabe-Helfer schaltet
+    den Sonnenschutz für alle zugeordneten Rollläden: AUS hält die Position und setzt den
+    Beschattungsstatus zurück, AN prüft sofort die normalen Beschattungsbedingungen.
+    Der Nachtmodus blockiert den Sonnenschutz; die einmalige Abendfahrt setzt dagegen
+    keine dauerhafte Sperre gegen spätere Beschattung.
 
     Pro Fenster/Rollladen wird eine eigene Automation erstellt. Gemeinsame Helfer für
     Morgen-/Abendzeiten und Nachtmodus können in allen Instanzen identisch gewählt werden.
@@ -36,7 +37,7 @@ blueprint:
     die Ausgangsposition wiederhergestellt werden.
 
     Basiert auf "s42 - Intelligente Rollladensteuerung V2" von TheRealSimon42, lokal
-    angepasst für binäre Fensterkontakte, ohne Kipp-Erkennung und ohne Moskito-Modus.
+    angepasst für binäre Fensterkontakte, ohne Kipp-Erkennung.
 
     📖 [Dokumentation](https://github.com/JonasKa23/ha-blueprints/blob/main/docs/cover_automation.md)
   domain: automation
@@ -76,21 +77,19 @@ blueprint:
     weather_section:
       name: Wetter
       description: |
-        Die Wetter-Entität, die als gemeinsame Datenquelle für mehrere Features dient:
-        Windgeschwindigkeit für den Sturmschutz, die maximale Tagestemperatur (Vorhersage) als
-        Fallback für den Sonnenschutz (sofern dort kein eigener Temperatursensor gesetzt ist),
-        sowie die minimale Tagestemperatur (Vorhersage) für Abend- und Nachtmodus.
+        Die Wetter-Entität liefert die vorhergesagte maximale Tagestemperatur als Fallback
+        für den Sonnenschutz (sofern dort kein eigener Temperatursensor gesetzt ist)
+        sowie die vorhergesagte minimale Tagestemperatur für Abend- und Nachtmodus.
       icon: mdi:weather-partly-cloudy
       input:
         weather_entity:
           name: Wetter-Entität
           description: |
-            Deine Wetter-Entität (z.B. von DWD oder der Standard-Integration). Wird für den
-            Sturmschutz (wind_speed-Attribut, sofern kein eigener Wind-Sensor gesetzt ist), als
-            Tageshöchsttemperatur- Fallback für den Sonnenschutz sowie für die Tagestiefsttemperatur
+            Deine Wetter-Entität (z.B. von DWD oder der Standard-Integration). Wird als
+            Tageshöchsttemperatur-Fallback für den Sonnenschutz sowie für die Tagestiefsttemperatur
             im Abend- und Nachtmodus verwendet (jeweils über die Tagesvorhersage der Entität).
-            Optional, aber ohne sie benötigt der Sturmschutz einen eigenen Wind-Sensor und
-            Abend-/Nachtmodus ignorieren die Temperatur-Schwellen.
+            Optional; ohne sie ignorieren Abend-/Nachtmodus die Temperatur-Schwellen und
+            der Sonnenschutz benötigt einen eigenen Tageshöchsttemperatur-Sensor.
           default: []
           selector:
             entity:
@@ -178,9 +177,7 @@ blueprint:
       name: Fenstergeometrie & Sonnenausrichtung
       description: |
         Ausrichtung und Sichtfeld des Fensters. Diese Werte bestimmen, wann die Sonne
-        geometrisch "ins Fenster scheint" — sowohl für den Sonnenschutz (Beschattung) als auch
-        für Sonnenheizen. Wird nur eines der beiden Features genutzt, müssen die Werte trotzdem
-        hier gesetzt werden.
+        geometrisch "ins Fenster scheint" und der Sonnenschutz beschatten kann.
 
         Zur Bedeutung von Ausrichtung und Sichtfeld: ![Erklärgrafik
         Sichtfeld](https://github.com/JonasKa23/ha-blueprints/blob/main/images/sichtfeld_beschattung.svg)
@@ -234,7 +231,7 @@ blueprint:
           name: Minimale Sonnenhöhe
           description: |
             Unterhalb dieser Sonnenhöhe (Elevation in Grad) gilt die Sonne als nicht "im Fenster"
-            (weder für Sonnenschutz noch für Sonnenheizen), z.B. weil Nachbargebäude oder Bäume die
+            für den Sonnenschutz, z.B. weil Nachbargebäude oder Bäume die
             tiefe Sonne ohnehin blockieren.
           default: 0
           selector:
@@ -267,6 +264,21 @@ blueprint:
           default: false
           selector:
             boolean: {}
+        shading_control_helper:
+          name: Globale Sonnenschutz-Freigabe (optional)
+          description: |
+            Gemeinsamer input_boolean-Helfer für alle gewünschten Rollläden. Beschattung ist
+            nur erlaubt, wenn "Sonnenschutz aktivieren" eingeschaltet ist und dieser Helfer AN
+            ist. Leer lassen für das bisherige Verhalten ohne globale Freigabe.
+            AUS beendet die Beschattung ohne Positionsänderung und setzt den Status-Helfer
+            zurück, auch während einer Pause. AN prüft sofort die normalen Bedingungen;
+            eine allgemeine Pause bleibt wirksam. Bei unbekanntem oder nicht verfügbarem
+            Helfer wird ebenfalls nicht beschattet. Einen anderen Helfer als den
+            Status-Helfer verwenden; diesen weiterhin pro Rollladen separat anlegen.
+          default: []
+          selector:
+            entity:
+              domain: input_boolean
         shading_status_helper:
           name: Status-Helfer (input_boolean)
           description: |
@@ -419,8 +431,8 @@ blueprint:
               unit_of_measurement: '%'
         shading_temp_sensor:
           name: Tageshöchsttemperatur-Sensor (optional)
-          description: Optionaler Sensor für die erwartete Tageshöchsttemperatur, gemeinsam für Sonnenschutz
-            und Sonnenheizen. Ohne Sensor wird die heutige Tageshöchsttemperatur aus der Wettervorhersage
+          description: Optionaler Sensor für die erwartete Tageshöchsttemperatur für den Sonnenschutz.
+            Ohne Sensor wird die heutige Tageshöchsttemperatur aus der Wettervorhersage
             verwendet. Ein aktueller Außentemperatur-Sensor ist hierfür nicht geeignet.
           default: []
           selector:
@@ -491,93 +503,6 @@ blueprint:
           default: false
           selector:
             boolean: {}
-    solar_heating_section:
-      name: Sonnenheizen (Winter)
-      description: |
-        Das Gegenteil des Sonnenschutzes: Öffnet einen heruntergelassenen (z.B. vergessenen)
-        Rollladen automatisch, wenn die Sonne laut Sonnenstand ins Fenster scheint und eine
-        niedrige Tageshöchsttemperatur erwartet wird — damit die Sonne kostenlos beim Aufheizen des Raums hilft. Nutzt
-        dieselbe Fensterausrichtung/Sichtfeld wie der Sonnenschutz (Abschnitt "Fenstergeometrie
-        & Sonnenausrichtung"), läuft aber unabhängig davon, ob der Sonnenschutz selbst aktiviert
-        ist. Der Sturmschutz hat immer Vorrang — bei Starkwind greift Sonnenheizen nicht. ⚠️
-        Benötigt einen EIGENEN input_boolean-Helfer (nicht denselben wie der
-        Sonnenschutz-Helfer!).
-      icon: mdi:sun-thermometer
-      collapsed: true
-      input:
-        solar_heating_enabled:
-          name: Sonnenheizen aktivieren
-          description: |
-            Benötigt zwingend den Status-Helfer (nächstes Feld) sowie die Werte im Abschnitt
-            "Fenstergeometrie & Sonnenausrichtung". Fehlt der Helfer, erinnert eine dauerhafte
-            Benachrichtigung in Home Assistant daran.
-          default: false
-          selector:
-            boolean: {}
-        solar_heating_status_helper:
-          name: Status-Helfer (input_boolean)
-          description: |
-            Erforderlich für Sonnenheizen: ein eigener input_boolean-Helfer NUR für dieses Fenster
-            (separat vom Sonnenschutz-Helfer). Verhindert, dass ein manuell wieder
-            heruntergelassener Rollladen im selben Zeitraum erneut aufgedrängt wird — erst wenn die
-            Bedingungen (Sonne/Temperatur) einmal enden und neu eintreten, öffnet Sonnenheizen
-            wieder.
-          default: []
-          selector:
-            entity:
-              domain: input_boolean
-        solar_heating_temp_threshold:
-          name: Temperatur-Schwelle
-          description: Sonnenheizen greift nur, wenn die erwartete Tageshöchsttemperatur höchstens diesem Wert
-            entspricht. Nutzt denselben Tageshöchsttemperatur-Sensor bzw. dieselbe Tagesvorhersage wie der
-            Sonnenschutz. Ohne gültige Höchsttemperatur beginnt kein Sonnenheizen.
-          default: 12
-          selector:
-            number:
-              min: -10
-              max: 20
-              step: 0.5
-              mode: slider
-              unit_of_measurement: °C
-        solar_heating_temp_hysteresis:
-          name: Temperatur-Hysterese
-          description: |
-            Sonnenheizen endet erst, wenn die Temperatur um diesen Wert über die Schwelle gestiegen
-            ist (verhindert ständiges Auf und Ab).
-          default: 2
-          selector:
-            number:
-              min: 0
-              max: 5
-              step: 0.5
-              mode: slider
-              unit_of_measurement: °C
-        solar_heating_min_position:
-          name: Grenzwert "heruntergelassen"
-          description: |
-            Der Rollladen gilt erst unterhalb dieser Position als "heruntergelassen" und wird nur
-            dann durch Sonnenheizen geöffnet (verhindert unnötiges Nachfahren bei einem bereits fast
-            offenen Rollladen).
-          default: 50
-          selector:
-            number:
-              min: 0
-              max: 100
-              step: 1
-              mode: slider
-              unit_of_measurement: '%'
-        solar_heating_position:
-          name: Zielposition
-          description: |
-            Position (in %), auf die der Rollladen beim Sonnenheizen geöffnet wird.
-          default: 100
-          selector:
-            number:
-              min: 0
-              max: 100
-              step: 1
-              mode: slider
-              unit_of_measurement: '%'
     evening_night_section:
       name: Abend- und Nachtmodus
       description: |
@@ -711,63 +636,6 @@ blueprint:
               step: 1
               mode: slider
               unit_of_measurement: '%'
-    storm_protection_section:
-      name: Sturmschutz
-      description: |
-        Fährt den Rollladen bei starkem Wind hoch (oder im Panzer-Modus herunter). Die
-        Wetter-Entität dafür wird im Abschnitt "Wetter" oben eingestellt.
-      icon: mdi:weather-windy
-      collapsed: true
-      input:
-        storm_enabled:
-          name: Sturmschutz aktivieren
-          description: |
-            Benötigt eine Wetter-Entität (Abschnitt "Wetter") oder einen Wind-Sensor (unten
-            auswählen).
-          default: false
-          selector:
-            boolean: {}
-        storm_wind_sensor:
-          name: Wind-Sensor (optional)
-          description: |
-            Alternativ zur Wetter-Entität: ein Sensor mit Windgeschwindigkeit, z.B. der Böen-Sensor
-            deiner Wetterstation (Böen sind für den Sturmschutz meist aussagekräftiger als der
-            Mittelwind). Wenn gesetzt, hat er Vorrang vor der Wetter-Entität.
-          default: []
-          selector:
-            entity:
-              domain: sensor
-              device_class: wind_speed
-        wind_speed_threshold:
-          name: Windgeschwindigkeit-Grenzwert
-          description: |
-            Ab dieser Windgeschwindigkeit wird der Sturmschutz ausgelöst (ca. 55 km/h empfohlen).
-            Wichtig: Der Wert wird direkt mit dem Sensorwert bzw. dem wind_speed-Attribut der
-            Wetter-Entität verglichen — liefert deine Quelle m/s oder mph statt km/h, muss der
-            Grenzwert entsprechend umgerechnet werden.
-          default: 55
-          selector:
-            number:
-              min: 30
-              max: 120
-              step: 1
-              mode: slider
-              unit_of_measurement: km/h
-        panzer_mode:
-          name: Panzer-Modus
-          description: |
-            Wenn aktiviert, wird der Rollladen bei Sturm geschlossen statt geöffnet.
-          default: false
-          selector:
-            boolean: {}
-        force_storm_action:
-          name: Aktion bei Sturm erzwingen
-          description: |
-            Wenn aktiviert, wird der Rollladen bei Sturm auch bewegt, wenn das Fenster offen ist. ⚠️
-            Achtung: Aussperr-Gefahr!
-          default: false
-          selector:
-            boolean: {}
     pause_section:
       name: Pausieren
       description: |
@@ -782,9 +650,10 @@ blueprint:
             Ein oder mehrere input_boolean-Helfer, die die Automatik anhalten — keine Fahrten, keine
             Meldungen. Ob dafür der ein- oder ausgeschaltete Zustand zählt, legst du im nächsten
             Feld fest; bei mehreren Helfern pausiert die Automatik nur, wenn ALLE gleichzeitig im
-            Pausier-Zustand sind. Zwei Ausnahmen: Der Sturmschutz greift weiterhin (Hardware-Schutz
-            geht vor), und der "Rollladen schließen"-Knopf einer Benachrichtigung funktioniert wie
-            der Wandtaster — bewusste Befehle werden nicht blockiert. Beim Ende der Pause wird ein
+            Pausier-Zustand sind. Der "Rollladen schließen"-Knopf einer Benachrichtigung funktioniert
+            weiterhin wie der Wandtaster — bewusste Befehle werden nicht blockiert. Das Löschen
+            von Fenstermeldungen und Zurücksetzen des Beschattungsstatus bei globaler Sperre
+            bleiben ebenfalls aktiv. Beim Ende der Pause wird ein
             inzwischen aktiver Nachtmodus nachgeholt und die Beschattung neu bewertet; verpasste
             Einzelereignisse (z.B. das morgendliche Öffnen, der Abendmodus oder das Zurückfahren
             nach dem Lüften) werden nicht nachgeholt.
@@ -903,13 +772,9 @@ variables:
   night_temp_threshold: !input 'night_temp_threshold'
   night_closed_position: !input 'night_closed_position'
   night_ventilation_position: !input 'night_ventilation_position'
-  storm_enabled: !input 'storm_enabled'
   weather_entity: !input 'weather_entity'
-  storm_wind_sensor: !input 'storm_wind_sensor'
-  wind_speed_threshold: !input 'wind_speed_threshold'
-  panzer_mode: !input 'panzer_mode'
-  force_storm_action: !input 'force_storm_action'
   shading_status_helper: !input 'shading_status_helper'
+  shading_control_helper: !input 'shading_control_helper'
   window_azimuth: !input 'window_azimuth'
   shading_fov_left: !input 'shading_fov_left'
   shading_fov_right: !input 'shading_fov_right'
@@ -928,11 +793,6 @@ variables:
   shading_override_threshold: !input 'shading_override_threshold'
   force_shading: !input 'force_shading'
   shading_weather_states: !input 'shading_weather_states'
-  solar_heating_status_helper: !input 'solar_heating_status_helper'
-  solar_heating_temp_threshold: !input 'solar_heating_temp_threshold'
-  solar_heating_temp_hysteresis: !input 'solar_heating_temp_hysteresis'
-  solar_heating_min_position: !input 'solar_heating_min_position'
-  solar_heating_position: !input 'solar_heating_position'
   pause_boolean: !input 'pause_boolean'
   pause_mode: !input 'pause_mode'
   pause_active: |-
@@ -962,11 +822,8 @@ variables:
   daily_low:
   night_temp_ok: true
   evening_temp_ok: true
-  solar_heating_enabled: !input 'solar_heating_enabled'
 trigger_variables:
   window_sensor_tv: !input 'window_sensor'
-  shading_enabled_tv: !input 'shading_enabled'
-  solar_heating_enabled_tv: !input 'solar_heating_enabled'
 triggers:
   - trigger: time
     at: !input 'morning_time'
@@ -1019,17 +876,6 @@ triggers:
     offset: !input 'evening_sunset_offset'
     id: evening_close
     enabled: !input 'evening_enabled'
-  - trigger: numeric_state
-    entity_id: !input 'weather_entity'
-    attribute: wind_speed
-    above: !input 'wind_speed_threshold'
-    id: storm_detected
-    enabled: !input 'storm_enabled'
-  - trigger: numeric_state
-    entity_id: !input 'storm_wind_sensor'
-    above: !input 'wind_speed_threshold'
-    id: storm_detected
-    enabled: !input 'storm_enabled'
   - trigger: event
     event_type: mobile_app_notification_action
     event_data:
@@ -1038,26 +884,40 @@ triggers:
   - trigger: time_pattern
     minutes: /5
     id: solar_tick
-    enabled: '{{ shading_enabled_tv or solar_heating_enabled_tv }}'
+    enabled: !input 'shading_enabled'
+  - trigger: state
+    entity_id: !input 'shading_control_helper'
+    to: 'on'
+    id: solar_tick
+    enabled: !input 'shading_enabled'
+  - trigger: state
+    entity_id: !input 'shading_control_helper'
+    to:
+      - 'off'
+      - unknown
+      - unavailable
+    id: shading_disabled
 actions:
   - condition: |-
-      {{ trigger.id | default('') in ['storm_detected', 'window_closed', 'close_shutter_action']
+      {{ trigger.id | default('') in ['window_closed', 'close_shutter_action', 'shading_disabled']
          or not pause_active }}
   - choose:
       - conditions:
           - condition: trigger
+            id: shading_disabled
+          - '{{ shading_control_helper is string and not is_state(shading_control_helper, ''on'') }}'
+        sequence:
+          - &clear_shading_status
+            if:
+              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: '{{ shading_status_helper }}'
+      - conditions:
+          - condition: trigger
             id: morning_open
         sequence:
-          - variables:
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
-          - condition: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
           - choose:
               - conditions:
                   - '{{ state_attr(cover_entity, ''current_position'') is not none }}'
@@ -1115,18 +975,8 @@ actions:
                     today_forecast.get(''temperature'') | float(none) }}'
                   night_temp_ok: '{{ daily_low is none or daily_low <= night_temp_threshold }}'
                   evening_temp_ok: '{{ daily_low is none or daily_low <= evening_temp_threshold }}'
-          - variables:
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
           - condition: '{{ evening_temp_ok }}'
           - condition: '{{ states(window_sensor) in [''off'', ''closed''] }}'
-          - condition: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
           - condition: '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
           - condition: '{{ state_attr(cover_entity, ''current_position'') | int(-1) > evening_position }}'
           - action: cover.set_cover_position
@@ -1140,12 +990,6 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: '{{ shading_status_helper }}'
-          - if:
-              - '{{ solar_heating_status_helper is string and is_state(solar_heating_status_helper, ''on'') }}'
-            then:
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: '{{ solar_heating_status_helper }}'
       - conditions:
           - condition: trigger
             id: night_close
@@ -1156,24 +1000,8 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: '{{ shading_status_helper }}'
-          - if:
-              - '{{ solar_heating_status_helper is string and is_state(solar_heating_status_helper, ''on'') }}'
-            then:
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: '{{ solar_heating_status_helper }}'
           - *refresh_daily_forecast
           - condition: '{{ night_temp_ok }}'
-          - variables:
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
-          - condition: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
           - choose:
               - conditions:
                   - '{{ states(window_sensor) in [''on'', ''open''] }}'
@@ -1191,27 +1019,6 @@ actions:
                   position: !input 'night_closed_position'
       - conditions:
           - condition: trigger
-            id: storm_detected
-          - '{{ force_storm_action or states(window_sensor) in [''off'', ''closed''] }}'
-        sequence:
-          - if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
-            then:
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: '{{ shading_status_helper }}'
-          - if:
-              - '{{ not panzer_mode }}'
-            then:
-              - action: cover.open_cover
-                target:
-                  entity_id: !input 'cover'
-            else:
-              - action: cover.close_cover
-                target:
-                  entity_id: !input 'cover'
-      - conditions:
-          - condition: trigger
             id: pause_ended
           - |-
             {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %} {% set ns = namespace(all = helpers | length > 0) %} {% for h in helpers %}
@@ -1225,19 +1032,9 @@ actions:
               - action: input_boolean.turn_off
                 target:
                   entity_id: '{{ shading_status_helper }}'
-          - variables:
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
           - *refresh_daily_forecast
           - if:
               - '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
-              - '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
               - '{{ night_temp_ok }}'
             then:
               - choose:
@@ -1259,6 +1056,14 @@ actions:
           - condition: trigger
             id: solar_tick
         sequence:
+          - if:
+              - '{{ shading_control_helper is string and not is_state(shading_control_helper, ''on'') }}'
+            then:
+              - *clear_shading_status
+          - &require_shading_permission
+            condition: >-
+              {{ shading_enabled and (shading_control_helper is not string
+                 or is_state(shading_control_helper, 'on')) }}
           - variables:
               sun_elevation: '{{ state_attr(''sun.sun'', ''elevation'') | float(0) }}'
               sun_azimuth: '{{ state_attr(''sun.sun'', ''azimuth'') | float(0) }}'
@@ -1277,6 +1082,8 @@ actions:
                       daily_high: '{{ states(shading_temp_sensor) | float(none) }}'
                 else:
                   - *refresh_daily_forecast
+          # Die Wetterabfrage kann warten: Freigabe danach erneut live prüfen.
+          - *require_shading_permission
           - if:
               - '{{ shading_enabled }}'
             then:
@@ -1294,15 +1101,6 @@ actions:
               - condition: '{{ shading_status_helper is string }}'
               - variables:
                   outdoor_temp: '{{ daily_high | float(-99) }}'
-                  wind_now: |-
-                    {% if storm_wind_sensor is string %}
-                      {{ states(storm_wind_sensor) | float(0) }}
-                    {% elif weather_entity is string %}
-                      {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                    {% else %}
-                      0
-                    {% endif %}
-                  storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
                   temp_available: '{{ daily_high is not none }}'
                   weather_ok: |-
                     {{ shading_weather_states | length == 0
@@ -1322,7 +1120,6 @@ actions:
                            and (outdoor_temp >= shading_temp_threshold
                                 or (is_state(shading_status_helper, 'on')
                                     and outdoor_temp > shading_temp_threshold - shading_temp_hysteresis)) }}
-                      - '{{ storm_ok }}'
                       - '{{ weather_ok }}'
                       - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
                       - '{{ force_shading or states(window_sensor) not in [''on'', ''open''] }}'
@@ -1347,6 +1144,7 @@ actions:
                               - '{{ deviation >= shading_min_change and deviation <= shading_override_threshold
                                 }}'
                             then:
+                              - *require_shading_permission
                               - action: cover.set_cover_position
                                 target:
                                   entity_id: !input 'cover'
@@ -1359,6 +1157,7 @@ actions:
                           - if:
                               - '{{ deviation >= shading_min_change }}'
                             then:
+                              - *require_shading_permission
                               - action: cover.set_cover_position
                                 target:
                                   entity_id: !input 'cover'
@@ -1375,81 +1174,12 @@ actions:
                       - action: input_boolean.turn_off
                         target:
                           entity_id: '{{ shading_status_helper }}'
+                      - *require_shading_permission
                       - action: cover.set_cover_position
                         target:
                           entity_id: !input 'cover'
                         data:
                           position: !input 'shading_end_position'
-          - if:
-              - '{{ solar_heating_enabled }}'
-            then:
-              - if:
-                  - '{{ solar_heating_status_helper is not string }}'
-                then:
-                  - action: persistent_notification.create
-                    data:
-                      notification_id: rollladen_heizhelfer_fehlt_{{ cover_entity | slugify }}
-                      title: 'Rollladensteuerung: Status-Helfer fehlt'
-                      message: Sonnenheizen für "{{ state_attr(cover_entity, 'friendly_name') or cover_entity
-                        }}" ist aktiviert, aber es ist kein eigener Status-Helfer (input_boolean) ausgewählt —
-                        das Feature bleibt dadurch wirkungslos. Bitte in der Automation einen Helfer auswählen
-                        oder Sonnenheizen deaktivieren.
-              - condition: '{{ solar_heating_status_helper is string }}'
-              - variables:
-                  outdoor_temp: '{{ daily_high | float(99) }}'
-                  temp_available: '{{ daily_high is not none }}'
-                  night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
-                  wind_now: |-
-                    {% if storm_wind_sensor is string %}
-                      {{ states(storm_wind_sensor) | float(0) }}
-                    {% elif weather_entity is string %}
-                      {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                    {% else %}
-                      0
-                    {% endif %}
-                  storm_ok: '{{ not storm_enabled or (wind_now | float(0)) < wind_speed_threshold }}'
-                  shading_temperature: '{{ daily_high | float(-99) }}'
-                  shading_weather_ok: |-
-                    {{ shading_weather_states | length == 0
-                       or not (weather_entity is string)
-                       or states(weather_entity) in ['unknown', 'unavailable']
-                       or states(weather_entity) in shading_weather_states }}
-                  shading_priority: |-
-                    {{ shading_enabled and shading_status_helper is string
-                       and (is_state(shading_status_helper, 'on')
-                            or (sun_in_window and shading_temperature >= shading_temp_threshold
-                                and shading_weather_ok
-                                and (force_shading or states(window_sensor) not in ['on', 'open']))) }}
-              - choose:
-                  - conditions:
-                      - '{{ not is_state(solar_heating_status_helper, ''on'') }}'
-                      - '{{ sun_in_window and outdoor_temp <= solar_heating_temp_threshold }}'
-                      - '{{ not night_mode_on }}'
-                      - '{{ storm_ok }}'
-                      - |-
-                        {{ state_attr(cover_entity, 'current_position') is not none
-                           and state_attr(cover_entity, 'current_position') | int(101) < solar_heating_min_position }}
-                      - '{{ not shading_priority }}'
-                      - '{{ state_attr(cover_entity, ''current_position'') | int(101) < solar_heating_position }}'
-                    sequence:
-                      - action: input_boolean.turn_on
-                        target:
-                          entity_id: '{{ solar_heating_status_helper }}'
-                      - action: cover.set_cover_position
-                        target:
-                          entity_id: !input 'cover'
-                        data:
-                          position: !input 'solar_heating_position'
-                  - conditions:
-                      - '{{ is_state(solar_heating_status_helper, ''on'') }}'
-                      - |-
-                        {{ (not sun_in_window)
-                           or (temp_available and outdoor_temp >= (solar_heating_temp_threshold + solar_heating_temp_hysteresis))
-                           or night_mode_on or shading_priority }}
-                    sequence:
-                      - action: input_boolean.turn_off
-                        target:
-                          entity_id: '{{ solar_heating_status_helper }}'
       - conditions:
           - condition: trigger
             id: window_open_long
@@ -1552,8 +1282,10 @@ actions:
               - conditions:
                   - '{{ not night_mode_on or not night_temp_ok }}'
                   - '{{ state_attr(cover_entity, ''current_position'') | int(101) < window_open_position }}'
-                  - '{{ not (force_shading and shading_status_helper is string and is_state(shading_status_helper,
-                    ''on'')) }}'
+                  - >-
+                    {{ not (force_shading and shading_enabled
+                       and (shading_control_helper is not string or is_state(shading_control_helper, 'on'))
+                       and shading_status_helper is string and is_state(shading_status_helper, 'on')) }}
                 sequence:
                   - action: cover.set_cover_position
                     target:
@@ -1594,22 +1326,12 @@ actions:
                 {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %} {% set found = expand(helpers) | list %} {{ helpers | length > 0
                    and found | length > 0
                    and found | rejectattr('state', 'eq', pausing) | list | length == 0 }}
-              wind_now: |-
-                {% if storm_wind_sensor is string %}
-                  {{ states(storm_wind_sensor) | float(0) }}
-                {% elif weather_entity is string %}
-                  {{ state_attr(weather_entity, 'wind_speed') | float(0) }}
-                {% else %}
-                  0
-                {% endif %}
-              storm_now: '{{ storm_enabled and (wind_now | float(0)) >= wind_speed_threshold }}'
           - if:
               - '{{ wait.trigger is none }}'
             then:
               - if:
                   - '{{ force_close }}'
                   - '{{ not pause_now }}'
-                  - '{{ not storm_now }}'
                 then:
                   - action: cover.close_cover
                     target:
@@ -1620,7 +1342,6 @@ actions:
                       - '{{ night_mode_on_now }}'
                       - '{{ not pause_now }}'
                       - '{{ night_temp_ok }}'
-                      - '{{ not storm_now }}'
                     sequence:
                       - action: cover.set_cover_position
                         target:
@@ -1628,7 +1349,6 @@ actions:
                         data:
                           position: !input 'night_closed_position'
                   - conditions:
-                      - '{{ not storm_now }}'
                       - '{{ not pause_now }}'
                       - '{{ expand(reclose_scene) | count > 0 }}'
                     sequence:

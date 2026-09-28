@@ -8,8 +8,8 @@ blueprint:
 
     Pro Fenster wird eine eigene Automation aus diesem Blueprint erstellt.
 
-    Herausgelöst aus dem Benachrichtigungsteil der Rollladensteuerung (Sonnenschutz, Sonnenheizen,
-    Abend- & Nachtmodus, Sturmschutz) für Fenster ohne motorisierten Rollladen.
+    Herausgelöst aus dem Benachrichtigungsteil der Rollladensteuerung (Sonnenschutz,
+    Abend- & Nachtmodus) für Fenster ohne motorisierten Rollladen.
   domain: automation
   author: JonasKa23
   homeassistant:
