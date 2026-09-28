@@ -9,6 +9,9 @@ Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
 - Rollladen und binären Fensterkontakt auswählen.
 - Gemeinsame Wetter-Entität im Abschnitt „Wetter“ auswählen; für die Temperaturprüfung
   muss sie tägliche Vorhersagen liefern. Temperaturen werden in °C erwartet.
+- Der optionale Tageshöchsttemperatur-Sensor entfällt. Alte `shading_temp_sensor`-Eingaben
+  aus bestehenden Instanzen entfernen. Der Sonnenschutz verwendet ausschließlich die
+  Tagesvorhersage der Wetter-Entität.
 - `window_open_position` ersetzt die bisherige Kipp-Position; Standard ist 35 %.
   Ein weiter geöffneter Rollladen wird beim Öffnen des Fensters nicht abgesenkt.
 - Alte Eingaben `tilted_position`, `treat_open_as_tilted`, `notification_timeout_tilted`
@@ -27,6 +30,20 @@ Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
   aus bestehenden Instanzen entfernen. Der Blueprint benötigt keinen Windsensor mehr
   und löst keine windabhängigen Fahrten oder Sperren aus. Die Wetter-Entität bleibt
   für Temperaturvorhersagen und den optionalen Wetterlagenfilter des Sonnenschutzes erhalten.
+
+## Pausieren
+
+Der optionale Pausier-Helfer hat eine feste Bedeutung: **AN pausiert die Automatik,
+AUS gibt sie wieder frei.** Bei mehreren ausgewählten Helfern wird wie bisher nur
+pausiert, wenn alle eingeschaltet sind. Ohne Auswahl ist die Pause inaktiv.
+Die Auswahl „Logik des Pausier-Helfers“ entfällt; alte `pause_mode`-Eingaben können
+aus bestehenden Instanzen entfernt werden. Auch bisher mit `off_pauses` konfigurierte
+Instanzen pausieren nach dem Update bei eingeschalteten Helfern.
+
+Der manuelle „Rollladen schließen“-Knopf, das Löschen von Fenstermeldungen und das
+Zurücksetzen des Beschattungsstatus bei globaler Sperre bleiben während einer Pause
+aktiv. Beim Ende der Pause wird ein aktiver Nachtmodus nachgeholt; die Beschattung
+wird beim nächsten regulären Takt geprüft.
 
 ## Abend und Nacht
 
@@ -91,10 +108,9 @@ Beschattung neu beginnen, auch wenn die Position zwischenzeitlich manuell verän
 
 ### Temperatur und Nachführung
 
-Der Sonnenschutz verwendet den optionalen Temperatursensor oder die vorhergesagte
-Höchsttemperatur für heute. Ohne gültige Temperatur beginnt keine neue Beschattung;
+Der Sonnenschutz verwendet die vorhergesagte Höchsttemperatur für heute aus der
+Wetter-Entität. Ohne Wetter-Entität oder gültige heutige Höchsttemperatur beginnt keine neue Beschattung;
 ein fehlender Wert allein beendet eine laufende Beschattung nicht.
-Der optionale Sensor muss einen Tageshöchstwert liefern, keinen aktuellen Messwert.
 
 Eine aktive Beschattung führt innerhalb der Temperatur-Hysterese weiter nach:
 bei Startschwelle 23 °C und Hysterese 2 °C auch zwischen 21 und 23 °C.
@@ -149,8 +165,6 @@ Ein Sonnen-Takt prüft alle fünf Minuten die Beschattung. Bei gesperrter Freiga
 oder außerhalb des Fenstersichtfelds entfällt die Forecast-Abfrage für diesen Takt.
 Das Einschalten der Freigabe löst dieselbe Prüfung sofort aus. Die Freigabe wird nach
 der Wetterabfrage und vor Beschattungsfahrten erneut geprüft.
-Mit eigenem Tageshöchsttemperatur-Sensor wird ebenfalls keine
-Vorhersage für diese Prüfung benötigt.
 
 Die Forecast-Abfrage und Datumsauswertung stehen einmal als YAML-Anker
 `refresh_daily_forecast` im Blueprint. Weitere Verwendungen referenzieren diese
