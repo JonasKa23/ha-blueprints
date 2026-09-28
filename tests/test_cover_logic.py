@@ -45,6 +45,10 @@ class CoverLogicTests(unittest.TestCase):
         self.env.globals.update(
             states=lambda entity: self.states.get(entity, 'unknown'),
             is_state=lambda entity, state: self.states.get(entity) == state,
+            expand=lambda entities: [
+                {'entity_id': entity, 'state': self.states[entity]}
+                for entity in entities if entity in self.states
+            ],
             state_attr=self.attr,
             now=lambda: self.now,
             today_at=lambda value: datetime.combine(self.now.date(), datetime.strptime(value, '%H:%M:%S').time(), timezone.utc),
@@ -246,6 +250,51 @@ class CoverLogicTests(unittest.TestCase):
         self.assertEqual(self.states['input_boolean.shading'], 'on')
         self.assertEqual(self.calls.count('weather.get_forecasts'), 1)
 
+    def test_pause_blocks_only_when_all_selected_helpers_are_on(self):
+        cases = [([], {}, False),
+                 ('input_boolean.pause', {'input_boolean.pause': 'on'}, True),
+                 ('input_boolean.pause', {'input_boolean.pause': 'off'}, False),
+                 (['input_boolean.pause'], {'input_boolean.pause': 'on'}, True),
+                 (['input_boolean.pause', 'input_boolean.pause_other'],
+                  {'input_boolean.pause': 'on', 'input_boolean.pause_other': 'on'}, True),
+                 (['input_boolean.pause', 'input_boolean.pause_other'],
+                  {'input_boolean.pause': 'on', 'input_boolean.pause_other': 'off'}, False)]
+        for helpers, states, paused in cases:
+            with self.subTest(helpers=helpers, states=states):
+                self.position = 60
+                self.ctx.update(pause_boolean=helpers, pause_mode='off_pauses')
+                self.states.update(states)
+                self.ctx['pause_active'] = self.render(self.doc['variables']['pause_active'])
+                self.assertEqual(self.ctx['pause_active'], paused)
+                self.run_trigger('morning_open')
+                self.assertEqual(self.position, 60 if paused else 100)
+
+    def test_pause_ending_catches_up_night_only_after_an_actual_pause(self):
+        self.ctx['pause_boolean'] = ['input_boolean.pause', 'input_boolean.pause_other']
+        self.states.update({'input_boolean.night': 'on', 'input_boolean.pause': 'off'})
+        for other in ('on', 'off'):
+            with self.subTest(other=other):
+                self.position = 60
+                self.states['input_boolean.pause_other'] = other
+                self.ctx['pause_active'] = self.render(self.doc['variables']['pause_active'])
+                self.run_trigger('pause_ended', entity_id='input_boolean.pause',
+                                 from_state={'state': 'on'}, to_state={'state': 'off'})
+                self.assertEqual(self.position, 0 if other == 'on' else 60)
+
+    def test_pause_is_rechecked_after_window_wait(self):
+        steps = self.branches['window_change']['sequence']
+        after_wait = next(i for i, step in enumerate(steps) if 'wait_for_trigger' in step) + 1
+        self.ctx.update(pause_boolean=['input_boolean.pause'], wait={'trigger': {}},
+                        reclose_scene='scene.reclose_cover_test')
+        self.states['input_boolean.night'] = 'on'
+        for state in ('on', 'off'):
+            with self.subTest(state=state):
+                self.position = 35
+                self.states['input_boolean.pause'] = state
+                self.ctx['pause_active'] = state == 'off'  # Opposite at run start.
+                self.run_steps(steps[after_wait:])
+                self.assertEqual(self.position, 35 if state == 'on' else 0)
+
     def test_global_off_clears_status_without_moving_even_when_paused(self):
         self.ctx['pause_active'] = True
         self.states['input_boolean.shading'] = 'on'
@@ -340,6 +389,14 @@ class CoverLogicTests(unittest.TestCase):
         self.run_trigger('solar_tick')
         self.assertEqual(self.position, 60)
         self.assertEqual(self.states['input_boolean.shading'], 'off')
+
+    def test_no_weather_entity_cannot_fall_back_to_removed_sensor(self):
+        self.ctx.update(weather_entity=[], shading_temp_sensor='sensor.old_daily_high')
+        self.states['sensor.old_daily_high'] = '30'
+        self.run_trigger('solar_tick')
+        self.assertEqual(self.position, 60)
+        self.assertEqual(self.states['input_boolean.shading'], 'off')
+        self.assertNotIn('weather.get_forecasts', self.calls)
 
     def test_missing_status_helper_reports_problem_without_moving(self):
         self.ctx['shading_status_helper'] = []

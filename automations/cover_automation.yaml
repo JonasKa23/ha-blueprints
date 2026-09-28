@@ -20,8 +20,8 @@ blueprint:
     Fenster. Abend- und Nachtmodus prüfen die vorhergesagte Tagestiefsttemperatur für heute.
     Fehlt dieser Wert, entfällt die Temperaturprüfung.
 
-    Der Sonnenschutz verwendet die erwartete Tageshöchsttemperatur für heute:
-    aus einem optionalen Tageshöchsttemperatur-Sensor oder aus der Wettervorhersage.
+    Der Sonnenschutz verwendet die erwartete Tageshöchsttemperatur für heute
+    aus der Wettervorhersage.
     Die Beschattung folgt dem Sonnenstand und führt innerhalb ihrer Temperatur-Hysterese
     weiter nach. Ohne gültigen Temperaturwert startet keine Beschattung. Jeder Rollladen
     benötigt einen eigenen Status-Helfer. Ein optionaler gemeinsamer Freigabe-Helfer schaltet
@@ -77,8 +77,8 @@ blueprint:
     weather_section:
       name: Wetter
       description: |
-        Die Wetter-Entität liefert die vorhergesagte maximale Tagestemperatur als Fallback
-        für den Sonnenschutz (sofern dort kein eigener Temperatursensor gesetzt ist)
+        Die Wetter-Entität liefert die vorhergesagte maximale Tagestemperatur
+        für den Sonnenschutz
         sowie die vorhergesagte minimale Tagestemperatur für Abend- und Nachtmodus.
       icon: mdi:weather-partly-cloudy
       input:
@@ -86,10 +86,10 @@ blueprint:
           name: Wetter-Entität
           description: |
             Deine Wetter-Entität (z.B. von DWD oder der Standard-Integration). Wird als
-            Tageshöchsttemperatur-Fallback für den Sonnenschutz sowie für die Tagestiefsttemperatur
+            Quelle der Tageshöchsttemperatur für den Sonnenschutz sowie der Tagestiefsttemperatur
             im Abend- und Nachtmodus verwendet (jeweils über die Tagesvorhersage der Entität).
             Optional; ohne sie ignorieren Abend-/Nachtmodus die Temperatur-Schwellen und
-            der Sonnenschutz benötigt einen eigenen Tageshöchsttemperatur-Sensor.
+            der Sonnenschutz startet keine Beschattung.
           default: []
           selector:
             entity:
@@ -179,8 +179,8 @@ blueprint:
         Ausrichtung und Sichtfeld des Fensters. Diese Werte bestimmen, wann die Sonne
         geometrisch "ins Fenster scheint" und der Sonnenschutz beschatten kann.
 
-        Zur Bedeutung von Ausrichtung und Sichtfeld: ![Erklärgrafik
-        Sichtfeld](https://github.com/JonasKa23/ha-blueprints/blob/main/images/sichtfeld_beschattung.svg)
+        Zur Bedeutung von Ausrichtung und Sichtfeld:
+        ![Erklärgrafik Sichtfeld](https://raw.githubusercontent.com/JonasKa23/ha-blueprints/main/images/sichtfeld_beschattung.svg)
       icon: mdi:sun-compass
       collapsed: true
       input:
@@ -429,21 +429,11 @@ blueprint:
               step: 1
               mode: slider
               unit_of_measurement: '%'
-        shading_temp_sensor:
-          name: Tageshöchsttemperatur-Sensor (optional)
-          description: Optionaler Sensor für die erwartete Tageshöchsttemperatur für den Sonnenschutz.
-            Ohne Sensor wird die heutige Tageshöchsttemperatur aus der Wettervorhersage
-            verwendet. Ein aktueller Außentemperatur-Sensor ist hierfür nicht geeignet.
-          default: []
-          selector:
-            entity:
-              domain: sensor
-              device_class: temperature
         shading_temp_threshold:
           name: Temperatur-Schwelle
           description: |
-            Beschattet wird nur, wenn die geprüfte Temperatur (eigener Sensor bzw. maximale
-            Tagestemperatur laut Vorhersage) über diesem Wert liegt.
+            Beschattung beginnt nur, wenn die für heute vorhergesagte Tageshöchsttemperatur
+            mindestens diesem Wert entspricht.
           default: 23
           selector:
             number:
@@ -648,9 +638,9 @@ blueprint:
           name: Pausier-Helfer (optional)
           description: |
             Ein oder mehrere input_boolean-Helfer, die die Automatik anhalten — keine Fahrten, keine
-            Meldungen. Ob dafür der ein- oder ausgeschaltete Zustand zählt, legst du im nächsten
-            Feld fest; bei mehreren Helfern pausiert die Automatik nur, wenn ALLE gleichzeitig im
-            Pausier-Zustand sind. Der "Rollladen schließen"-Knopf einer Benachrichtigung funktioniert
+            Meldungen. AN bedeutet pausiert, AUS gibt die Automatik wieder frei. Bei mehreren
+            Helfern pausiert die Automatik nur, wenn ALLE gleichzeitig eingeschaltet sind.
+            Der "Rollladen schließen"-Knopf einer Benachrichtigung funktioniert
             weiterhin wie der Wandtaster — bewusste Befehle werden nicht blockiert. Das Löschen
             von Fenstermeldungen und Zurücksetzen des Beschattungsstatus bei globaler Sperre
             bleiben ebenfalls aktiv. Beim Ende der Pause wird ein
@@ -662,22 +652,6 @@ blueprint:
             entity:
               domain: input_boolean
               multiple: true
-        pause_mode:
-          name: Logik des Pausier-Helfers
-          description: |
-            Gilt für alle ausgewählten Pausier-Helfer gemeinsam. "AN pausiert" passt zu Helfern wie
-            "Aufnahme läuft" — pausiert wird, wenn alle eingeschaltet sind. "AUS pausiert" macht die
-            Helfer zu Aktiv-Schaltern fürs Dashboard (z.B. "Rollladensteuerung aktiv") — pausiert
-            wird, wenn alle ausgeschaltet sind; sobald einer an ist, läuft die Automatik.
-          default: on_pauses
-          selector:
-            select:
-              mode: list
-              options:
-                - value: on_pauses
-                  label: Helfer AN = Automatik pausiert (z.B. "Aufnahme läuft")
-                - value: off_pauses
-                  label: Helfer AUS = Automatik pausiert (z.B. "Rollladensteuerung aktiv")
     notification_section:
       name: Benachrichtigungen
       description: |
@@ -786,7 +760,6 @@ variables:
   glass_top_position: !input 'glass_top_position'
   shading_min_position: !input 'shading_min_position'
   shading_end_position: !input 'shading_end_position'
-  shading_temp_sensor: !input 'shading_temp_sensor'
   shading_temp_threshold: !input 'shading_temp_threshold'
   shading_temp_hysteresis: !input 'shading_temp_hysteresis'
   shading_min_change: !input 'shading_min_change'
@@ -794,11 +767,10 @@ variables:
   force_shading: !input 'force_shading'
   shading_weather_states: !input 'shading_weather_states'
   pause_boolean: !input 'pause_boolean'
-  pause_mode: !input 'pause_mode'
-  pause_active: |-
-    {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %} {% set found = expand(helpers) | list %} {{ helpers | length > 0
+  pause_active: &pause_active_template |-
+    {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set found = expand(helpers) | list %} {{ helpers | length > 0
        and found | length > 0
-       and found | rejectattr('state', 'eq', pausing) | list | length == 0 }}
+       and found | rejectattr('state', 'eq', 'on') | list | length == 0 }}
   sleep_mode_boolean: !input 'sleep_mode_boolean'
   use_area_name: !input 'use_area_name'
   notification_timeout: !input 'notification_timeout'
@@ -857,11 +829,6 @@ triggers:
     entity_id: !input 'pause_boolean'
     from: 'on'
     to: 'off'
-    id: pause_ended
-  - trigger: state
-    entity_id: !input 'pause_boolean'
-    from: 'off'
-    to: 'on'
     id: pause_ended
   - trigger: state
     entity_id: !input 'night_mode_boolean'
@@ -971,8 +938,7 @@ actions:
                     {% endfor %}
                     {{ result.entry }}
                   daily_low: '{{ today_forecast.get(''templow'') | float(none) }}'
-                  daily_high: '{{ states(shading_temp_sensor) | float(none) if shading_temp_sensor is string else
-                    today_forecast.get(''temperature'') | float(none) }}'
+                  daily_high: '{{ today_forecast.get(''temperature'') | float(none) }}'
                   night_temp_ok: '{{ daily_low is none or daily_low <= night_temp_threshold }}'
                   evening_temp_ok: '{{ daily_low is none or daily_low <= evening_temp_threshold }}'
           - condition: '{{ evening_temp_ok }}'
@@ -1021,9 +987,9 @@ actions:
           - condition: trigger
             id: pause_ended
           - |-
-            {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %} {% set ns = namespace(all = helpers | length > 0) %} {% for h in helpers %}
+            {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set ns = namespace(all = helpers | length > 0) %} {% for h in helpers %}
               {% set st = trigger.from_state.state if h == trigger.entity_id else states(h) %}
-              {% if st != pausing %}{% set ns.all = false %}{% endif %}
+              {% if st != 'on' %}{% set ns.all = false %}{% endif %}
             {% endfor %} {{ ns.all }}
         sequence:
           - if:
@@ -1075,13 +1041,7 @@ actions:
           - if:
               - '{{ sun_in_window }}'
             then:
-              - if:
-                  - '{{ shading_temp_sensor is string }}'
-                then:
-                  - variables:
-                      daily_high: '{{ states(shading_temp_sensor) | float(none) }}'
-                else:
-                  - *refresh_daily_forecast
+              - *refresh_daily_forecast
           # Die Wetterabfrage kann warten: Freigabe danach erneut live prüfen.
           - *require_shading_permission
           - if:
@@ -1322,10 +1282,7 @@ actions:
           - *refresh_daily_forecast
           - variables:
               night_mode_on_now: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
-              pause_now: |-
-                {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set pausing = 'on' if pause_mode == 'on_pauses' else 'off' %} {% set found = expand(helpers) | list %} {{ helpers | length > 0
-                   and found | length > 0
-                   and found | rejectattr('state', 'eq', pausing) | list | length == 0 }}
+              pause_now: *pause_active_template
           - if:
               - '{{ wait.trigger is none }}'
             then:
