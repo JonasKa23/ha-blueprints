@@ -1,0 +1,101 @@
+# ENTWURF — separate Automation als Blueprint, damit keine Entity-ID geraten wird.
+blueprint:
+  name: Schlafzimmer – Heizdecke bei HA-Start ausschalten
+  description: Prüft zuerst den aktuellen Zustand; wartet begrenzt auf Erreichbarkeit.
+  domain: automation
+  source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/heizdecke_ha_start.yaml
+  homeassistant:
+    min_version: '2024.10.0'
+  input:
+    steckdose:
+      name: Heizdecken-Steckdose
+      description: Dieselbe verifizierte switch-Entity wie im Heizscript; Pflichtauswahl.
+      selector:
+        entity:
+          filter:
+            - domain: switch
+    timeout_s:
+      name: Timeout für Erreichbarkeit
+      description: Maximale Wartezeit nach HA-Start in Sekunden.
+      default: 120
+      selector:
+        number: {min: 10, max: 600, step: 1, unit_of_measurement: s, mode: box}
+    benachrichtigung:
+      name: Zusätzliche Benachrichtigungsaktion (optional)
+      description: "notify-Aktion mit message: '{{ meldung }}'; HA-Meldung erfolgt immer."
+      default: []
+      selector:
+        action: {}
+mode: single
+triggers:
+  - trigger: homeassistant
+    event: start
+variables:
+  steckdose: !input steckdose
+actions:
+  - if:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: !input steckdose
+            state: ['on', 'off']
+    then:
+      - wait_for_trigger:
+          - trigger: state
+            entity_id: !input steckdose
+            to: ['on', 'off']
+        timeout:
+          seconds: !input timeout_s
+        continue_on_timeout: true
+  - if:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: !input steckdose
+            state: ['on', 'off']
+    then:
+      - variables:
+          meldung: >-
+            HA-Start: Timeout; {{ steckdose }} ist {{ states(steckdose) }}.
+            Ausschalten nicht möglich. Decke/Steckdose vor Ort prüfen.
+      - action: persistent_notification.create
+        data:
+          title: Heizdecke – HA-Start
+          message: '{{ meldung }}'
+        continue_on_error: true
+      - sequence: !input benachrichtigung
+      - stop: Steckdose nach Timeout nicht erreichbar.
+  - action: switch.turn_off
+    target:
+      entity_id: !input steckdose
+    continue_on_error: true
+  - if:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: !input steckdose
+            state: 'off'
+    then:
+      - wait_for_trigger:
+          - trigger: state
+            entity_id: !input steckdose
+            to: 'off'
+        timeout: '00:00:10'
+        continue_on_timeout: true
+  - if:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: !input steckdose
+            state: 'off'
+    then:
+      - variables:
+          meldung: >-
+            HA-Start: Ausschalten von {{ steckdose }} nicht bestätigt;
+            Zustand {{ states(steckdose) }}. Decke/Steckdose vor Ort prüfen.
+      - action: persistent_notification.create
+        data:
+          title: Heizdecke – HA-Start
+          message: '{{ meldung }}'
+        continue_on_error: true
+      - sequence: !input benachrichtigung
