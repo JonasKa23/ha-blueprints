@@ -493,27 +493,19 @@ blueprint:
           default: false
           selector:
             boolean: {}
-    evening_night_section:
-      name: Abend- und Nachtmodus
+    evening_section:
+      name: Abendmodus
       description: |
-        Zwei unabhängige Wege, den Rollladen für die Nacht zu fahren — jeweils mit eigener
-        Temperatur-Schwelle und frei einstellbarer Zielposition. Beide prüfen dabei NICHT die
-        aktuelle Temperatur, sondern die laut Wettervorhersage der Wetter-Entität (Abschnitt
-        "Wetter") erwartete MINIMALE Tagestemperatur:
-
-        Abendmodus (automatisch): schließt zu einer festen Uhrzeit ODER zum
-        Sonnenuntergang+Offset — beide Zeitpunkte prüfen die Temperatur erneut; gefahren wird
-        nur, wenn die minimale Tagestemperatur höchstens der Schwelle entspricht. Reagiert nur
-        bei geschlossenem Fenster und nur, solange der Nachtmodus noch nicht aktiv ist.
-
-        Nachtmodus (manuell): wird per gemeinsamem Helfer eingeschaltet und fährt dann auf seine
-        Zielposition, sofern die minimale Tagestemperatur die Schwelle unterschreitet — sonst
-        bleibt der Rollladen stehen (eine laufende Beschattung wird trotzdem beendet).
+        Fährt automatisch zu einer festen Uhrzeit oder zum Sonnenuntergang mit Offset auf die
+        eingestellte Zielposition. Beide Zeitpunkte prüfen die für heute vorhergesagte minimale
+        Tagestemperatur erneut: Sie muss höchstens der eingestellten Schwelle entsprechen.
+        Ohne gültige Vorhersage entfällt die Temperaturprüfung. Gefahren wird nur bei
+        geschlossenem Fenster und solange der Nachtmodus noch nicht aktiv ist.
 
         Der Abendmodus ist eine einmalige Fahrt ohne eigenen Status-Helfer. Bei offenem Fenster
         entfällt die Fahrt. Nachtmodus und morgendliches Öffnen übernehmen über ihre eigenen
         Auslöser.
-      icon: mdi:weather-night
+      icon: mdi:weather-sunset-down
       collapsed: true
       input:
         evening_enabled:
@@ -572,6 +564,17 @@ blueprint:
               step: 1
               mode: slider
               unit_of_measurement: '%'
+    night_section:
+      name: Nachtmodus
+      description: |
+        Wird über einen gemeinsamen input_boolean-Helfer eingeschaltet. Nutzt getrennte
+        Zielpositionen für geschlossene und offene Fenster sowie eine eigene Temperatur-Schwelle.
+        Die für heute vorhergesagte minimale Tagestemperatur muss höchstens dieser Schwelle
+        entsprechen; ohne gültige Vorhersage entfällt die Temperaturprüfung.
+        Eine laufende Beschattung wird beim Einschalten unabhängig von der Temperatur beendet.
+      icon: mdi:weather-night
+      collapsed: true
+      input:
         night_mode_boolean:
           name: Nachtmodus-Helfer (optional)
           description: |
