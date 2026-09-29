@@ -60,7 +60,7 @@ Ein zusätzlicher Datum-und-Uhrzeit-Helfer oder eine Abend-Endzeit ist nicht erf
 Nachtmodus und morgendliches Öffnen übernehmen über ihre jeweiligen Auslöser.
 Falls bereits konfiguriert, die Eingaben `evening_until_helper` und `evening_end_time`
 aus der Automation entfernen. Ein eventuell angelegter Helfer wird nicht mehr verwendet.
-Die bestehende Fenster-Rückfahr-Logik bleibt erhalten.
+Die Fenster-Rückfahr-Logik wird durch den Morgenbefehl wie unten beschrieben aufgehoben.
 
 Der Nachtmodus wird durch einen input_boolean eingeschaltet. Bei geschlossenem Fenster
 wird `night_closed_position`, bei offenem Fenster `night_ventilation_position` verwendet.
@@ -73,6 +73,24 @@ Auch bei Fenster-Interaktion und nach dem Rückfahr-Warten wird die Nacht-Temper
 angewendet. Ist es zu warm, gilt beim Öffnen die Tages-Lüftungsposition und beim Schließen
 wird die vorherige Position wiederhergestellt. Eine Pause verhindert das Zurückfahren.
 Der Nachtmodus-Helfer blockiert den Sonnenschutz unabhängig von der Temperatur.
+
+## Morgens öffnen während des Lüftens
+
+Der Morgenbefehl hat Vorrang vor einem bereits laufenden Lüftungsvorgang. Er verwirft
+die gespeicherte Rückfahrposition, auch wenn der Rollladen die Morgenzielposition bereits
+erreicht hat und deshalb keine weitere Öffnungsfahrt nötig ist.
+
+Beispiel: geschlossen (0 %) → Lüftungsposition (35 %) → Morgenbefehl (100 %) →
+Fenster schließen: Der Rollladen bleibt bei 100 %.
+Für diesen Lüftungsvorgang entfallen auch die Rückfahrt zur Nachtposition und
+„Schließen erzwingen“ nach Ablauf des Zeitfensters. Ein durch die Pause blockierter
+Morgenbefehl hebt die Rückfahrt nicht auf.
+
+Beim nächsten Öffnen des Fensters wird wieder eine neue Ausgangsposition gespeichert.
+Andere, später ausgelöste Fahrbefehle (etwa Nachtmodus oder Sonnenschutz) gelten weiterhin.
+Technisch wird die dynamische Rückfahr-Szene mit
+[`scene.delete`](https://www.home-assistant.io/integrations/scene/#deleting-dynamically-created-scenes)
+entfernt; der Lüftungsvorgang prüft nach seinen Wartephasen, ob sie noch vorhanden ist.
 
 ## Sonnenschutz
 

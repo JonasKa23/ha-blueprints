@@ -34,7 +34,9 @@ blueprint:
     Morgen-/Abendzeiten und Nachtmodus können in allen Instanzen identisch gewählt werden.
     Bei Fensteröffnung wird nur bis zur Lüftungsposition geöffnet, sofern der Rollladen
     aktuell weiter geschlossen ist. Innerhalb des Rückfahr-Zeitfensters kann anschließend
-    die Ausgangsposition wiederhergestellt werden.
+    die Ausgangsposition wiederhergestellt werden. Morgendliches Öffnen hebt die Rückfahrt
+    eines bereits laufenden Lüftungsvorgangs auf, einschließlich Nachtposition und
+    erzwungenem Schließen nach Ablauf des Zeitfensters.
 
     Basiert auf "s42 - Intelligente Rollladensteuerung V2" von TheRealSimon42, lokal
     angepasst für binäre Fensterkontakte, ohne Kipp-Erkennung.
@@ -121,7 +123,8 @@ blueprint:
           name: Zielposition für morgens
           description: |
             Die Position (in %), auf die der Rollladen morgens fährt. Es wird nur gefahren, wenn der
-            Rollladen geschlossener ist als diese Position.
+            Rollladen geschlossener ist als diese Position. Der Morgenbefehl hebt eine laufende
+            Lüftungs-Rückfahrt auch dann auf, wenn die Zielposition bereits erreicht ist.
           default: 100
           selector:
             number:
@@ -156,7 +159,7 @@ blueprint:
           name: Zeitfenster für automatisches Zurückfahren
           description: |
             Wird das Fenster innerhalb dieser Zeit wieder geschlossen, fährt der Rollladen in seine
-            Ausgangsposition zurück.
+            Ausgangsposition zurück, sofern zwischenzeitlich kein Morgenbefehl übernommen hat.
           default: 30
           selector:
             number:
@@ -169,7 +172,8 @@ blueprint:
           name: Schließen erzwingen
           description: |
             Wenn aktiviert, wird der Rollladen nach Ablauf des Zeitfensters immer geschlossen, auch
-            wenn das Fenster noch offen ist. ⚠️ Achtung: Aussperr-Gefahr!
+            wenn das Fenster noch offen ist. Ein zwischenzeitlicher Morgenbefehl hebt dies für den
+            laufenden Lüftungsvorgang auf. ⚠️ Achtung: Aussperr-Gefahr!
           default: false
           selector:
             boolean: {}
@@ -888,6 +892,14 @@ actions:
           - condition: trigger
             id: morning_open
         sequence:
+          - variables:
+              reclose_scene: scene.reclose_{{ cover_entity | slugify }}
+          - if:
+              - '{{ expand(reclose_scene) | count > 0 }}'
+            then:
+              - action: scene.delete
+                target:
+                  entity_id: '{{ reclose_scene }}'
           - choose:
               - conditions:
                   - '{{ state_attr(cover_entity, ''current_position'') is not none }}'
@@ -1224,10 +1236,6 @@ actions:
           - variables:
               night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
-          - if:
-              - '{{ night_mode_on }}'
-            then:
-              - *refresh_daily_forecast
           - condition: '{{ states(window_sensor) in ["on", "open"] }}'
           - if:
               - |-
@@ -1241,6 +1249,13 @@ actions:
                   scene_id: '{{ ''reclose_'' ~ (cover_entity | slugify) }}'
                   snapshot_entities:
                     - '{{ cover_entity }}'
+          - if:
+              - '{{ night_mode_on }}'
+            then:
+              - *refresh_daily_forecast
+          # Auch während der Wetterabfrage kann der Morgenbefehl die Szene verwerfen.
+          - condition: '{{ expand(reclose_scene) | count > 0 }}'
+          - condition: '{{ states(window_sensor) in ["on", "open"] }}'
           - choose:
               - conditions:
                   - '{{ not night_mode_on or not night_temp_ok }}'
@@ -1283,6 +1298,8 @@ actions:
               minutes: !input 'reclose_timeout'
             continue_on_timeout: true
           - *refresh_daily_forecast
+          # Ohne Rückfahr-Szene darf dieser Lüftungsvorgang keinen Schließbefehl mehr senden.
+          - condition: '{{ expand(reclose_scene) | count > 0 }}'
           - variables:
               night_mode_on_now: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               pause_now: *pause_active_template

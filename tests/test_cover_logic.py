@@ -37,6 +37,7 @@ class CoverLogicTests(unittest.TestCase):
             'input_boolean.night': 'off',
         }
         self.position = 60
+        self.scenes = {}
         self.after_forecast = None
         self.calls = []
         self.forecast = [{'datetime': '2026-09-24T12:00:00+00:00', 'temperature': 22, 'templow': 10}]
@@ -47,7 +48,8 @@ class CoverLogicTests(unittest.TestCase):
             is_state=lambda entity, state: self.states.get(entity) == state,
             expand=lambda entities: [
                 {'entity_id': entity, 'state': self.states[entity]}
-                for entity in entities if entity in self.states
+                for entity in ([entities] if isinstance(entities, str) else entities)
+                if entity in self.states
             ],
             state_attr=self.attr,
             now=lambda: self.now,
@@ -152,6 +154,16 @@ class CoverLogicTests(unittest.TestCase):
                         if self.after_forecast:
                             self.after_forecast()
                     elif action == 'scene.create':
+                        scene = 'scene.' + self.render(step['data']['scene_id'])
+                        self.scenes[scene] = self.position
+                        self.states[scene] = 'unknown'
+                        self.calls.append(action)
+                    elif action == 'scene.delete':
+                        del self.scenes[entity]
+                        del self.states[entity]
+                        self.calls.append(action)
+                    elif action == 'scene.turn_on':
+                        self.position = self.scenes[entity]
                         self.calls.append(action)
                     elif action == 'input_datetime.set_datetime':
                         stamp = self.render(step['data']['timestamp'])
@@ -160,6 +172,9 @@ class CoverLogicTests(unittest.TestCase):
                         self.states[entity] = 'on' if action.endswith('turn_on') else 'off'
                     elif action == 'cover.set_cover_position':
                         self.position = self.render(step['data']['position'])
+                        self.calls.append((action, self.position))
+                    elif action in ('cover.open_cover', 'cover.close_cover'):
+                        self.position = 100 if action == 'cover.open_cover' else 0
                         self.calls.append((action, self.position))
                     else:
                         self.fail(f'Unsupported action: {action}')
@@ -224,6 +239,95 @@ class CoverLogicTests(unittest.TestCase):
         self.run_steps(self.branches['solar_tick']['sequence'])
         self.assertNotIn('weather.get_forecasts', self.calls)
 
+    def begin_ventilation(self):
+        self.states['binary_sensor.window'] = 'on'
+        self.run_trigger('window_change', from_state={'state': 'off'})
+        return copy.deepcopy(self.ctx)
+
+    def finish_ventilation(self, context, *, timed_out=False):
+        self.ctx = context
+        self.ctx['wait'] = {'trigger': None if timed_out else {}}
+        if not timed_out:
+            self.states['binary_sensor.window'] = 'off'
+        steps = self.branches['window_change']['sequence']
+        after_wait = next(i for i, step in enumerate(steps) if 'wait_for_trigger' in step) + 1
+        self.run_steps(steps[after_wait:])
+
+    def test_morning_cancels_pending_ventilation_moves(self):
+        for night in ('off', 'on'):
+            for timed_out in (False, True):
+                for initial in (0, 100):
+                    with self.subTest(night=night, timed_out=timed_out, initial=initial):
+                        self.setUp()
+                        self.position = initial
+                        self.states['input_boolean.night'] = night
+                        self.ctx['force_close'] = True
+                        context = self.begin_ventilation()
+                        self.run_trigger('morning_open')
+                        self.assertEqual(self.position, 100)
+                        self.calls.clear()
+                        self.finish_ventilation(context, timed_out=timed_out)
+                        self.assertEqual(self.position, 100)
+                        self.assertFalse(any(isinstance(call, tuple) for call in self.calls))
+                        self.assertNotIn('scene.turn_on', self.calls)
+
+    def test_ventilation_without_morning_keeps_existing_behavior(self):
+        for night, timed_out, force, expected in (
+                ('off', False, False, 10),
+                ('on', False, False, 0),
+                ('off', True, False, 35),
+                ('off', True, True, 0)):
+            with self.subTest(night=night, timed_out=timed_out, force=force):
+                self.setUp()
+                self.position = 10
+                self.states['input_boolean.night'] = night
+                self.ctx['force_close'] = force
+                context = self.begin_ventilation()
+                self.finish_ventilation(context, timed_out=timed_out)
+                self.assertEqual(self.position, expected)
+
+    def test_new_ventilation_after_morning_restores_new_snapshot(self):
+        self.position = 0
+        context = self.begin_ventilation()
+        self.run_trigger('morning_open')
+        self.finish_ventilation(context)
+        self.position = 20
+        context = self.begin_ventilation()
+        self.assertEqual(self.position, 35)
+        self.finish_ventilation(context)
+        self.assertEqual(self.position, 20)
+
+    def test_paused_morning_does_not_cancel_ventilation(self):
+        self.position = 10
+        context = self.begin_ventilation()
+        self.ctx['pause_active'] = True
+        self.run_trigger('morning_open')
+        self.assertEqual(self.position, 35)
+        self.finish_ventilation(context)
+        self.assertEqual(self.position, 10)
+
+    def test_morning_during_ventilation_forecast_has_priority(self):
+        def morning_during_forecast():
+            # A separate parallel run has its own variables and shared entity states.
+            context = copy.deepcopy(self.ctx)
+            self.run_trigger('morning_open')
+            self.ctx = context
+
+        for phase in ('opening', 'closing'):
+            with self.subTest(phase=phase):
+                self.setUp()
+                self.position = 0
+                self.states['input_boolean.night'] = 'on'
+                if phase == 'opening':
+                    self.after_forecast = morning_during_forecast
+                    self.begin_ventilation()
+                else:
+                    context = self.begin_ventilation()
+                    self.after_forecast = morning_during_forecast
+                    self.finish_ventilation(context)
+                self.assertEqual(self.position, 100)
+                self.assertEqual(self.calls[-1], ('cover.set_cover_position', 100))
+
     def run_trigger(self, trigger_id, **trigger):
         self.ctx.update(trigger_id=trigger_id, trigger=dict(id=trigger_id, **trigger))
         self.run_steps(self.doc['actions'])
@@ -287,6 +391,7 @@ class CoverLogicTests(unittest.TestCase):
         self.ctx.update(pause_boolean=['input_boolean.pause'], wait={'trigger': {}},
                         reclose_scene='scene.reclose_cover_test')
         self.states['input_boolean.night'] = 'on'
+        self.states['scene.reclose_cover_test'] = 'unknown'
         for state in ('on', 'off'):
             with self.subTest(state=state):
                 self.position = 35
