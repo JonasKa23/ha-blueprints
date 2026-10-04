@@ -680,18 +680,21 @@ blueprint:
         notification_only_when_home:
           name: Nur Personen benachrichtigen, die zuhause sind
           description: >
-            Prüft für jedes ausgewählte Gerät einzeln, ob seine zugeordnete Person
-            zuhause ist. Geräte ohne eindeutige Zuordnung werden übersprungen.
+            Prüft für jedes ausgewählte Gerät einzeln die zugeordnete Person oder den
+            Anwesenheits-Helfer (input_boolean). Geräte ohne eindeutige Zuordnung
+            werden übersprungen.
             Bei späterer Heimkehr wird keine Benachrichtigung nachgeholt.
           default: false
           selector:
             boolean: {}
         notification_device_persons:
-          name: Personen je Benachrichtigungsgerät
+          name: Anwesenheit je Benachrichtigungsgerät
           description: >
             Füge für jedes oben ausgewählte Gerät einen Eintrag mit der zugehörigen Person
-            hinzu. Eine Person darf mehrere Geräte haben; jedes Gerät darf nur einer Person
-            zugeordnet sein. Die Prüfung verwendet den Zuhause-Status der jeweiligen Person.
+            oder ihrem Anwesenheits-Helfer (input_boolean) hinzu. Dieselbe Entität darf
+            mehreren Geräten zugeordnet sein; jedes Gerät darf nur eine Zuordnung haben.
+            Als anwesend gilt eine Person mit Status home oder ein eingeschalteter Helfer
+            (on). Ausgeschaltete, unbekannte oder nicht verfügbare Helfer gelten nicht als anwesend.
           default: []
           selector:
             object:
@@ -699,11 +702,14 @@ blueprint:
               label_field: person
               fields:
                 person:
-                  label: Person
+                  label: Person oder Anwesenheits-Helfer
                   required: true
                   selector:
                     entity:
-                      domain: person
+                      filter:
+                        - domain:
+                            - person
+                            - input_boolean
                 device:
                   label: Benachrichtigungsgerät
                   required: true
@@ -1195,7 +1201,8 @@ actions:
                       {% set persons = matches | selectattr('person', 'defined')
                          | map(attribute='person') | unique | list %}
                       {{ persons | length == 1 and persons[0] is string
-                         and is_state(persons[0], 'home') }}
+                         and ((persons[0].startswith('person.') and is_state(persons[0], 'home'))
+                              or (persons[0].startswith('input_boolean.') and is_state(persons[0], 'on'))) }}
                     {% endif %}
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true

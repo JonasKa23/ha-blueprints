@@ -142,20 +142,24 @@ ist diese Option wegen Aussperr-Gefahr nicht empfohlen.
 
 Unter **Benachrichtigungen** lässt sich **Nur Personen benachrichtigen, die zuhause sind**
 einschalten. Standardmäßig ist die Prüfung ausgeschaltet. Wähle die gewünschten
-**Benachrichtigungs-Geräte** aus und füge unter **Personen je Benachrichtigungsgerät**
-für jedes Gerät einen Eintrag mit seiner Person hinzu. Eine Person kann mehrere Geräte
-haben. Die Zuordnung erfolgt ausdrücklich über das Gerät, nicht über die Reihenfolge
+**Benachrichtigungs-Geräte** aus und füge unter **Anwesenheit je Benachrichtigungsgerät**
+für jedes Gerät einen Eintrag mit seiner Person oder ihrem Anwesenheits-Helfer
+(`input_boolean`) hinzu. Dieselbe Entität kann mehreren Geräten zugeordnet werden.
+Die Zuordnung erfolgt ausdrücklich über das Gerät, nicht über die Reihenfolge
 in den Auswahllisten.
 
 Bei aktivierter Prüfung wird unmittelbar vor jeder Nachricht nur die zu diesem Gerät
-gehörende Person geprüft. Beispiel: Anna ist zuhause, Ben unterwegs → nur Annas Gerät
+gehörende Entität geprüft: Bei einer Person bedeutet `home` anwesend, bei einem
+`input_boolean` bedeutet `on` anwesend und `off` abwesend.
+Beispiel: Annas Helfer ist eingeschaltet, Bens Helfer ausgeschaltet → nur Annas Gerät
 erhält die Erinnerung. Sind beide zuhause, erhalten beide die Nachricht; ist niemand
 zuhause, erhält niemand eine Nachricht. Ohne eindeutige Zuordnung oder bei unbekanntem
-bzw. nicht verfügbarem Personenstatus wird das betreffende Gerät übersprungen.
+bzw. nicht verfügbarem Status wird das betreffende Gerät übersprungen.
 Bei späterer Heimkehr wird keine Nachricht nachgeholt. Bereits gesendete Meldungen
 werden beim Schließen des Fensters weiterhin auf allen ausgewählten Geräten entfernt.
 
-Auch bei nur einem Gerät wird die Person über die Zuordnungsliste festgelegt.
+Auch bei nur einem Gerät wird die Anwesenheitsentität über die Zuordnungsliste festgelegt.
+Bestehende Zuordnungen zu Personen bleiben gültig; Personen und Helfer lassen sich mischen.
 
 Die Zuordnung verwendet ein Formular mit wiederholbaren Einträgen
 ([Home-Assistant-Objektselektor](https://www.home-assistant.io/docs/blueprint/selectors/#object-selector)).
