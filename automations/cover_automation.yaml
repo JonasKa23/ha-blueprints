@@ -369,7 +369,7 @@ blueprint:
             Wie weit die Sonne maximal in den Raum scheinen darf (auf dem Fußboden gemessen, ab
             Fensterebene). Kleinere Werte = strengere Beschattung; bei sehr kleinen Werten fährt der
             Rollladen praktisch komplett zu.
-          default: 0.5
+          default: 0.4
           selector:
             number:
               min: 0
