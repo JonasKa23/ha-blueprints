@@ -19,7 +19,11 @@ Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
   aus bestehenden Instanzen entfernen. Kipp-Erkennung und Moskito-Modus entfallen.
   Bisherige Drei-Zustands-Sensoren müssen durch binäre Kontakte ersetzt werden.
 - Für Sonnenschutz einen eigenen Status-Helfer pro Rollladen auswählen.
-  Morgen-/Abendzeiten benötigen reine Uhrzeit-Helfer ohne Datum.
+  Die Morgenzeit benötigt einen reinen Uhrzeit-Helfer ohne Datum.
+- Der Abendmodus wird ausschließlich über den zentralen Helfer `evening_mode_boolean`
+  ausgelöst. Alte Eingaben `evening_time` und `evening_sunset_offset` aus bestehenden
+  Instanzen entfernen und die Zeitsteuerung in eine externe Automation verlagern,
+  die den Abendmodus-Helfer ein- und ausschaltet.
 - Sonnenheizen ist entfernt. Alte Eingaben `solar_heating_enabled`,
   `solar_heating_status_helper`, `solar_heating_temp_threshold`,
   `solar_heating_temp_hysteresis`, `solar_heating_min_position` und
@@ -47,14 +51,25 @@ wird beim nächsten regulären Takt geprüft.
 
 ## Abend und Nacht
 
-Der standardmäßig deaktivierte Abendmodus prüft sowohl die gewählte feste Uhrzeit
-als auch Sonnenuntergang plus Offset (Standard: 30 Minuten danach). Negative Offsets
-sind möglich. Ohne Uhrzeit-Helfer bleibt nur der Sonnenuntergangs-Trigger.
+Im Blueprint-Formular haben **Abendmodus** und **Nachtmodus** jeweils einen eigenen Abschnitt.
+Der standardmäßig deaktivierte Abendmodus wird ausschließlich über den zentralen
+Helfer `evening_mode_boolean` ausgelöst. Eine externe Automation kann diesen Helfer
+zur gewünschten Uhrzeit oder zum Sonnenuntergang einschalten. Im Blueprint gibt es
+keine eigenen Abend-Auslöser für Uhrzeit oder Sonnenuntergang mehr.
 Der Abendmodus führt eine einzelne Fahrt aus und speichert keinen eigenen Zustand.
-Beide Abendtermine prüfen ihre Bedingungen erneut. Der Rollladen fährt nur bei
+Jedes Einschalten prüft die Bedingungen erneut. Der Rollladen fährt nur bei
 geschlossenem Fenster und ohne aktiven Nachtmodus auf `evening_position`,
 und nur, wenn er aktuell weiter geöffnet ist. Bei offenem Fenster entfällt die Fahrt;
 sie wird beim späteren Schließen nicht eigens nachgeholt.
+
+Für eine zentrale Abendfahrt in allen gewünschten Instanzen **Abendmodus aktivieren**
+einschalten und unter **Zentraler Abendmodus-Helfer (optional)** denselben input_boolean
+auswählen. Einen anderen Helfer als für den Nachtmodus verwenden. Nur der Wechsel von
+`off` auf `on` löst aus; eine Pause und die übrigen Abendbedingungen gelten weiterhin.
+Ausschalten bewegt keinen Rollladen. Der Blueprint setzt den gemeinsamen Helfer nicht
+zurück: Vor der nächsten Auslösung muss er wieder ausgeschaltet werden. Ein dauerhaft
+eingeschalteter Helfer bewirkt keine weiteren Fahrten und keine Beschattungssperre.
+Ohne ausgewählten Abendmodus-Helfer wird keine Abendfahrt ausgelöst.
 
 Ein zusätzlicher Datum-und-Uhrzeit-Helfer oder eine Abend-Endzeit ist nicht erforderlich.
 Nachtmodus und morgendliches Öffnen übernehmen über ihre jeweiligen Auslöser.

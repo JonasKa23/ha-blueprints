@@ -6,8 +6,9 @@ blueprint:
     und Sonnenschutz. Alle Zielpositionen sind einstellbar;
     0 % bedeutet geschlossen, 100 % vollständig geöffnet.
 
-    Der Abendmodus führt zu einer festen Uhrzeit und/oder zum Sonnenuntergang mit Offset
-    eine einzelne Fahrt aus. Beide Termine prüfen die Bedingungen erneut. Gefahren wird
+    Der Abendmodus führt beim Einschalten eines zentralen input_boolean-Helfers eine einzelne
+    Fahrt aus. Die zeitliche Steuerung übernimmt eine externe Automation, die den Helfer schaltet.
+    Bei jedem Einschalten werden die Bedingungen erneut geprüft. Gefahren wird
     nur bei geschlossenem Fenster, wenn der Nachtmodus noch nicht aktiv ist und die
     vorhergesagte Tagestiefsttemperatur höchstens der eingestellten Schwelle entspricht.
     Ein bereits weiter geschlossener Rollladen wird dabei nicht geöffnet.
@@ -31,7 +32,7 @@ blueprint:
     keine dauerhafte Sperre gegen spätere Beschattung.
 
     Pro Fenster/Rollladen wird eine eigene Automation erstellt. Gemeinsame Helfer für
-    Morgen-/Abendzeiten und Nachtmodus können in allen Instanzen identisch gewählt werden.
+    Morgenzeit, Abendmodus und Nachtmodus können in allen Instanzen identisch gewählt werden.
     Bei Fensteröffnung wird nur bis zur Lüftungsposition geöffnet, sofern der Rollladen
     aktuell weiter geschlossen ist. Innerhalb des Rückfahr-Zeitfensters kann anschließend
     die Ausgangsposition wiederhergestellt werden. Morgendliches Öffnen hebt die Rückfahrt
@@ -500,9 +501,11 @@ blueprint:
     evening_section:
       name: Abendmodus
       description: |
-        Fährt automatisch zu einer festen Uhrzeit oder zum Sonnenuntergang mit Offset auf die
-        eingestellte Zielposition. Beide Zeitpunkte prüfen die für heute vorhergesagte minimale
-        Tagestemperatur erneut: Sie muss höchstens der eingestellten Schwelle entsprechen.
+        Fährt beim Einschalten eines zentralen input_boolean-Helfers auf die eingestellte
+        Zielposition. Uhrzeit oder Sonnenuntergang werden bei Bedarf in einer externen
+        Automation festgelegt, die den Helfer einschaltet.
+        Bei jedem Einschalten wird die für heute vorhergesagte minimale
+        Tagestemperatur erneut geprüft: Sie muss höchstens der eingestellten Schwelle entsprechen.
         Ohne gültige Vorhersage entfällt die Temperaturprüfung. Gefahren wird nur bei
         geschlossenem Fenster und solange der Nachtmodus noch nicht aktiv ist.
 
@@ -514,32 +517,27 @@ blueprint:
       input:
         evening_enabled:
           name: Abendmodus aktivieren
+          description: Aktiviert die Abendfahrt über den unten ausgewählten zentralen Helfer.
           default: false
           selector:
             boolean: {}
-        evening_time:
-          name: Feste Uhrzeit für den Abendmodus (optional)
+        evening_mode_boolean:
+          name: Zentraler Abendmodus-Helfer (optional)
           description: |
-            Ein input_datetime-Helfer NUR mit Uhrzeit (ohne Datum). Leer lassen, um nur über
-            Sonnenuntergang+Offset auszulösen. In allen Blueprint-Instanzen denselben Helfer
-            auswählen.
+            Ein gemeinsamer input_boolean-Helfer für alle gewünschten Rollläden. Der Wechsel
+            von AUS auf AN löst einmalig die Abendfahrt aus, sofern "Abendmodus aktivieren"
+            eingeschaltet ist und die normalen Bedingungen erfüllt sind (keine Pause,
+            Fenster geschlossen, Nachtmodus aus, Temperatur-Schwelle eingehalten).
+            In allen gewünschten Blueprint-Instanzen denselben Helfer auswählen;
+            für Abend- und Nachtmodus unterschiedliche Helfer verwenden.
+            AUS löst keine Fahrt aus. Der Helfer wird von diesem Blueprint nicht zurückgesetzt;
+            für eine erneute Auslösung erst aus- und wieder einschalten.
+            Eine externe Automation kann den Helfer zeitgesteuert ein- und ausschalten.
+            Leer lassen, wenn kein Abendmodus gewünscht ist.
           default: []
           selector:
             entity:
-              domain: input_datetime
-        evening_sunset_offset:
-          name: Offset zum Sonnenuntergang
-          description: |
-            Löst den Abendmodus zusätzlich zur festen Uhrzeit relativ zum Sonnenuntergang aus (z.B.
-            01:00:00 = eine Stunde nach Sonnenuntergang). Negative Werte lösen vor dem
-            Sonnenuntergang aus.
-          default:
-            hours: 0
-            minutes: 30
-          selector:
-            duration:
-              enable_second: true
-              allow_negative: true
+              domain: input_boolean
         evening_temp_threshold:
           name: Temperatur-Schwelle für den Abendmodus ("nur bei Kälte")
           description: |
@@ -847,13 +845,10 @@ triggers:
     entity_id: !input 'night_mode_boolean'
     to: 'on'
     id: night_close
-  - trigger: time
-    at: !input 'evening_time'
-    id: evening_close
-    enabled: !input 'evening_enabled'
-  - trigger: sun
-    event: sunset
-    offset: !input 'evening_sunset_offset'
+  - trigger: state
+    entity_id: !input 'evening_mode_boolean'
+    from: 'off'
+    to: 'on'
     id: evening_close
     enabled: !input 'evening_enabled'
   - trigger: event
