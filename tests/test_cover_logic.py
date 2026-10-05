@@ -69,7 +69,6 @@ class CoverLogicTests(unittest.TestCase):
             cover_entity='cover.test', cover='cover.test', window_sensor='binary_sensor.window',
             weather_entity='weather.test', shading_status_helper='input_boolean.shading',
             night_mode_boolean='input_boolean.night',
-            evening_enabled=True,
             shading_enabled=True, pause_active=False,
             daily_forecast={}, today_forecast={}, daily_high=None, daily_low=None,
             night_temp_ok=True, evening_temp_ok=True,

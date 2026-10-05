@@ -24,6 +24,10 @@ Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
   ausgelöst. Alte Eingaben `evening_time` und `evening_sunset_offset` aus bestehenden
   Instanzen entfernen und die Zeitsteuerung in eine externe Automation verlagern,
   die den Abendmodus-Helfer ein- und ausschaltet.
+- Der zusätzliche Schalter `evening_enabled` entfällt. Alte `evening_enabled`-Eingaben
+  aus bestehenden Instanzen entfernen. Mit ausgewähltem Abendmodus-Helfer ist die Funktion
+  aktiv, auch wenn der bisherige Schalter ausgeschaltet war. Zum Deaktivieren die
+  Helfer-Auswahl leeren.
 - Sonnenheizen ist entfernt. Alte Eingaben `solar_heating_enabled`,
   `solar_heating_status_helper`, `solar_heating_temp_threshold`,
   `solar_heating_temp_hysteresis`, `solar_heating_min_position` und
@@ -52,8 +56,9 @@ wird beim nächsten regulären Takt geprüft.
 ## Abend und Nacht
 
 Im Blueprint-Formular haben **Abendmodus** und **Nachtmodus** jeweils einen eigenen Abschnitt.
-Der standardmäßig deaktivierte Abendmodus wird ausschließlich über den zentralen
-Helfer `evening_mode_boolean` ausgelöst. Eine externe Automation kann diesen Helfer
+Der Abendmodus wird ausschließlich über den optionalen zentralen Helfer
+`evening_mode_boolean` ausgelöst. Ohne ausgewählten Helfer ist er deaktiviert.
+Eine externe Automation kann diesen Helfer
 zur gewünschten Uhrzeit oder zum Sonnenuntergang einschalten. Im Blueprint gibt es
 keine eigenen Abend-Auslöser für Uhrzeit oder Sonnenuntergang mehr.
 Der Abendmodus führt eine einzelne Fahrt aus und speichert keinen eigenen Zustand.
@@ -62,8 +67,8 @@ geschlossenem Fenster und ohne aktiven Nachtmodus auf `evening_position`,
 und nur, wenn er aktuell weiter geöffnet ist. Bei offenem Fenster entfällt die Fahrt;
 sie wird beim späteren Schließen nicht eigens nachgeholt.
 
-Für eine zentrale Abendfahrt in allen gewünschten Instanzen **Abendmodus aktivieren**
-einschalten und unter **Zentraler Abendmodus-Helfer (optional)** denselben input_boolean
+Für eine zentrale Abendfahrt in allen gewünschten Instanzen unter
+**Zentraler Abendmodus-Helfer (optional)** denselben input_boolean
 auswählen. Einen anderen Helfer als für den Nachtmodus verwenden. Nur der Wechsel von
 `off` auf `on` löst aus; eine Pause und die übrigen Abendbedingungen gelten weiterhin.
 Ausschalten bewegt keinen Rollladen. Der Blueprint setzt den gemeinsamen Helfer nicht
