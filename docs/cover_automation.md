@@ -66,6 +66,11 @@ Jedes Einschalten prüft die Bedingungen erneut. Der Rollladen fährt nur bei
 geschlossenem Fenster und ohne aktiven Nachtmodus auf `evening_position`,
 und nur, wenn er aktuell weiter geöffnet ist. Bei offenem Fenster entfällt die Fahrt;
 sie wird beim späteren Schließen nicht eigens nachgeholt.
+Die Standard-Zielposition beträgt abends 20 %, nachts bei geschlossenem Fenster 0 %
+und nachts bei offenem Fenster 20 %.
+Die Prozentwerte beziehen sich auf die Motorposition; den tatsächlichen Lichtspalt
+am jeweiligen Rollladen prüfen. Explizit gespeicherte Zielpositionen in bestehenden
+Automationen bleiben von einer Änderung des Blueprint-Standardwerts unberührt.
 
 Für eine zentrale Abendfahrt in allen gewünschten Instanzen unter
 **Zentraler Abendmodus-Helfer (optional)** denselben input_boolean
@@ -114,6 +119,11 @@ entfernt; der Lüftungsvorgang prüft nach seinen Wartephasen, ob sie noch vorha
 
 ## Sonnenschutz
 
+Das Sichtfeld beträgt standardmäßig links und rechts jeweils 45° relativ zur
+Fensterausrichtung. Die minimale Beschattungsposition beträgt 20 %.
+Die maximal erlaubte Sonneneinfall-Tiefe beträgt standardmäßig 0,5 m, auf dem
+Fußboden ab der Fensterebene gemessen.
+
 ### Gemeinsame Freigabe
 
 Die lokale Einstellung **Sonnenschutz aktivieren** bleibt erhalten. Zusätzlich kann unter
@@ -155,7 +165,7 @@ bei Startschwelle 23 °C und Hysterese 2 °C auch zwischen 21 und 23 °C.
 Bei 21 °C oder darunter endet sie. Ein fehlender Messwert allein löst keine Fahrt aus.
 
 Bei erzwungener Beschattung bestimmt `shading_min_position` den Mindestspalt, auch bei
-offenem Fenster. Der Standard ist 25 %; ein eingestellter Wert von 0 % lässt vollständiges Schließen zu; für Terrassentüren
+offenem Fenster. Der Standard ist 20 %; ein eingestellter Wert von 0 % lässt vollständiges Schließen zu; für Terrassentüren
 ist diese Option wegen Aussperr-Gefahr nicht empfohlen.
 
 ## Benachrichtigungen bei Anwesenheit

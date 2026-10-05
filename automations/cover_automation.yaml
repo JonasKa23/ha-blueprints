@@ -212,7 +212,7 @@ blueprint:
             wenn auf dieser Seite ein Hindernis die Sonne blockiert (tiefe Laibung, Balkon,
             Nachbarhaus). Links/rechts gilt von innen am Fenster stehend mit Blick nach draußen —
             bei einem Südfenster ist links die Vormittagsseite (Osten).
-          default: 60
+          default: 45
           selector:
             number:
               min: 0
@@ -225,7 +225,7 @@ blueprint:
           description: |
             Wie Sichtfeld links, nur rechts der Fensterausrichtung — bei einem Südfenster die
             Nachmittags-/Abendseite (Westen).
-          default: 60
+          default: 45
           selector:
             number:
               min: 0
@@ -369,7 +369,7 @@ blueprint:
             Wie weit die Sonne maximal in den Raum scheinen darf (auf dem Fußboden gemessen, ab
             Fensterebene). Kleinere Werte = strengere Beschattung; bei sehr kleinen Werten fährt der
             Rollladen praktisch komplett zu.
-          default: 0.4
+          default: 0.5
           selector:
             number:
               min: 0
@@ -415,7 +415,7 @@ blueprint:
             Tiefer als diese Position fährt die Beschattung nicht (z.B. 10 %, damit immer etwas
             Tageslicht bleibt). 0 = ganz schließen erlaubt. Dient bei aktivierter "Beschattung
             erzwingen" außerdem als Mindest-Lüftungsspalt, wenn das Fenster offen ist.
-          default: 25
+          default: 20
           selector:
             number:
               min: 0
@@ -538,8 +538,8 @@ blueprint:
           name: Temperatur-Schwelle für den Abendmodus ("nur bei Kälte")
           description: |
             Der Abendmodus schließt nur, wenn die laut Wettervorhersage der Wetter-Entität
-            (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur unter diesem Wert
-            liegt — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder ohne verfügbare
+            (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur höchstens diesem Wert
+            entspricht — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder ohne verfügbare
             Vorhersage wird der Abendmodus wie gehabt ausgelöst (kein Blockieren durch fehlende
             Daten).
           default: 15
@@ -554,7 +554,7 @@ blueprint:
           name: Zielposition für den Abendmodus
           description: |
             Position (in %), auf die der Rollladen im Abendmodus fährt.
-          default: 0
+          default: 20
           selector:
             number:
               min: 0
@@ -578,7 +578,7 @@ blueprint:
           description: |
             Ein input_boolean-Helfer. Wird er eingeschaltet, fährt der Rollladen für die Nacht auf
             die "Zielposition für den Nachtmodus" (bzw. bei offenem Fenster auf die Nachtposition
-            weiter unten) — sofern die Temperatur-Schwelle unterschritten ist. Leer lassen, wenn
+            weiter unten) — sofern die Temperatur-Schwelle nicht überschritten ist. Leer lassen, wenn
             kein Nachtmodus gewünscht ist. In allen Blueprint-Instanzen denselben Helfer auswählen.
           default: []
           selector:
@@ -589,7 +589,7 @@ blueprint:
           description: |
             Der Nachtmodus fährt den Rollladen nur, wenn die laut Wettervorhersage der
             Wetter-Entität (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur unter
-            diesem Wert liegt — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder
+            oder gleich diesem Wert ist — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder
             ohne verfügbare Vorhersage wird der Nachtmodus wie gehabt immer ausgeführt (kein
             Blockieren durch fehlende Daten). Eine laufende Beschattung wird unabhängig davon immer
             beendet.
@@ -619,7 +619,7 @@ blueprint:
           description: |
             Position (in %), auf die nachts (Nachtmodus-Helfer aktiv) gefahren wird, solange das
             Fenster offen ist.
-          default: 10
+          default: 20
           selector:
             number:
               min: 0
