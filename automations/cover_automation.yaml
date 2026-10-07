@@ -6,8 +6,10 @@ blueprint:
     und Sonnenschutz. Alle Zielpositionen sind einstellbar;
     0 % bedeutet geschlossen, 100 % vollständig geöffnet.
 
-    Der Abendmodus führt zu einer festen Uhrzeit und/oder zum Sonnenuntergang mit Offset
-    eine einzelne Fahrt aus. Beide Termine prüfen die Bedingungen erneut. Gefahren wird
+    Der Abendmodus führt beim Einschalten eines zentralen input_boolean-Helfers eine einzelne
+    Fahrt aus. Die zeitliche Steuerung übernimmt eine externe Automation, die den Helfer schaltet.
+    Ohne ausgewählten Abendmodus-Helfer ist der Abendmodus deaktiviert.
+    Bei jedem Einschalten werden die Bedingungen erneut geprüft. Gefahren wird
     nur bei geschlossenem Fenster, wenn der Nachtmodus noch nicht aktiv ist und die
     vorhergesagte Tagestiefsttemperatur höchstens der eingestellten Schwelle entspricht.
     Ein bereits weiter geschlossener Rollladen wird dabei nicht geöffnet.
@@ -31,10 +33,12 @@ blueprint:
     keine dauerhafte Sperre gegen spätere Beschattung.
 
     Pro Fenster/Rollladen wird eine eigene Automation erstellt. Gemeinsame Helfer für
-    Morgen-/Abendzeiten und Nachtmodus können in allen Instanzen identisch gewählt werden.
+    Morgenzeit, Abendmodus und Nachtmodus können in allen Instanzen identisch gewählt werden.
     Bei Fensteröffnung wird nur bis zur Lüftungsposition geöffnet, sofern der Rollladen
     aktuell weiter geschlossen ist. Innerhalb des Rückfahr-Zeitfensters kann anschließend
-    die Ausgangsposition wiederhergestellt werden.
+    die Ausgangsposition wiederhergestellt werden. Morgendliches Öffnen hebt die Rückfahrt
+    eines bereits laufenden Lüftungsvorgangs auf, einschließlich Nachtposition und
+    erzwungenem Schließen nach Ablauf des Zeitfensters.
 
     Basiert auf "s42 - Intelligente Rollladensteuerung V2" von TheRealSimon42, lokal
     angepasst für binäre Fensterkontakte, ohne Kipp-Erkennung.
@@ -121,7 +125,8 @@ blueprint:
           name: Zielposition für morgens
           description: |
             Die Position (in %), auf die der Rollladen morgens fährt. Es wird nur gefahren, wenn der
-            Rollladen geschlossener ist als diese Position.
+            Rollladen geschlossener ist als diese Position. Der Morgenbefehl hebt eine laufende
+            Lüftungs-Rückfahrt auch dann auf, wenn die Zielposition bereits erreicht ist.
           default: 100
           selector:
             number:
@@ -156,7 +161,7 @@ blueprint:
           name: Zeitfenster für automatisches Zurückfahren
           description: |
             Wird das Fenster innerhalb dieser Zeit wieder geschlossen, fährt der Rollladen in seine
-            Ausgangsposition zurück.
+            Ausgangsposition zurück, sofern zwischenzeitlich kein Morgenbefehl übernommen hat.
           default: 30
           selector:
             number:
@@ -169,7 +174,8 @@ blueprint:
           name: Schließen erzwingen
           description: |
             Wenn aktiviert, wird der Rollladen nach Ablauf des Zeitfensters immer geschlossen, auch
-            wenn das Fenster noch offen ist. ⚠️ Achtung: Aussperr-Gefahr!
+            wenn das Fenster noch offen ist. Ein zwischenzeitlicher Morgenbefehl hebt dies für den
+            laufenden Lüftungsvorgang auf. ⚠️ Achtung: Aussperr-Gefahr!
           default: false
           selector:
             boolean: {}
@@ -206,7 +212,7 @@ blueprint:
             wenn auf dieser Seite ein Hindernis die Sonne blockiert (tiefe Laibung, Balkon,
             Nachbarhaus). Links/rechts gilt von innen am Fenster stehend mit Blick nach draußen —
             bei einem Südfenster ist links die Vormittagsseite (Osten).
-          default: 60
+          default: 45
           selector:
             number:
               min: 0
@@ -219,7 +225,7 @@ blueprint:
           description: |
             Wie Sichtfeld links, nur rechts der Fensterausrichtung — bei einem Südfenster die
             Nachmittags-/Abendseite (Westen).
-          default: 60
+          default: 45
           selector:
             number:
               min: 0
@@ -409,7 +415,7 @@ blueprint:
             Tiefer als diese Position fährt die Beschattung nicht (z.B. 10 %, damit immer etwas
             Tageslicht bleibt). 0 = ganz schließen erlaubt. Dient bei aktivierter "Beschattung
             erzwingen" außerdem als Mindest-Lüftungsspalt, wenn das Fenster offen ist.
-          default: 25
+          default: 20
           selector:
             number:
               min: 0
@@ -493,63 +499,47 @@ blueprint:
           default: false
           selector:
             boolean: {}
-    evening_night_section:
-      name: Abend- und Nachtmodus
+    evening_section:
+      name: Abendmodus
       description: |
-        Zwei unabhängige Wege, den Rollladen für die Nacht zu fahren — jeweils mit eigener
-        Temperatur-Schwelle und frei einstellbarer Zielposition. Beide prüfen dabei NICHT die
-        aktuelle Temperatur, sondern die laut Wettervorhersage der Wetter-Entität (Abschnitt
-        "Wetter") erwartete MINIMALE Tagestemperatur:
-
-        Abendmodus (automatisch): schließt zu einer festen Uhrzeit ODER zum
-        Sonnenuntergang+Offset — beide Zeitpunkte prüfen die Temperatur erneut; gefahren wird
-        nur, wenn die minimale Tagestemperatur höchstens der Schwelle entspricht. Reagiert nur
-        bei geschlossenem Fenster und nur, solange der Nachtmodus noch nicht aktiv ist.
-
-        Nachtmodus (manuell): wird per gemeinsamem Helfer eingeschaltet und fährt dann auf seine
-        Zielposition, sofern die minimale Tagestemperatur die Schwelle unterschreitet — sonst
-        bleibt der Rollladen stehen (eine laufende Beschattung wird trotzdem beendet).
+        Fährt beim Einschalten eines zentralen input_boolean-Helfers auf die eingestellte
+        Zielposition. Uhrzeit oder Sonnenuntergang werden bei Bedarf in einer externen
+        Automation festgelegt, die den Helfer einschaltet. Ohne ausgewählten Helfer ist
+        der Abendmodus deaktiviert.
+        Bei jedem Einschalten wird die für heute vorhergesagte minimale
+        Tagestemperatur erneut geprüft: Sie muss höchstens der eingestellten Schwelle entsprechen.
+        Ohne gültige Vorhersage entfällt die Temperaturprüfung. Gefahren wird nur bei
+        geschlossenem Fenster und solange der Nachtmodus noch nicht aktiv ist.
 
         Der Abendmodus ist eine einmalige Fahrt ohne eigenen Status-Helfer. Bei offenem Fenster
         entfällt die Fahrt. Nachtmodus und morgendliches Öffnen übernehmen über ihre eigenen
         Auslöser.
-      icon: mdi:weather-night
+      icon: mdi:weather-sunset-down
       collapsed: true
       input:
-        evening_enabled:
-          name: Abendmodus aktivieren
-          default: false
-          selector:
-            boolean: {}
-        evening_time:
-          name: Feste Uhrzeit für den Abendmodus (optional)
+        evening_mode_boolean:
+          name: Zentraler Abendmodus-Helfer (optional)
           description: |
-            Ein input_datetime-Helfer NUR mit Uhrzeit (ohne Datum). Leer lassen, um nur über
-            Sonnenuntergang+Offset auszulösen. In allen Blueprint-Instanzen denselben Helfer
-            auswählen.
+            Ein gemeinsamer input_boolean-Helfer für alle gewünschten Rollläden. Der Wechsel
+            von AUS auf AN löst einmalig die Abendfahrt aus, sofern die normalen
+            Bedingungen erfüllt sind (keine Pause,
+            Fenster geschlossen, Nachtmodus aus, Temperatur-Schwelle eingehalten).
+            In allen gewünschten Blueprint-Instanzen denselben Helfer auswählen;
+            für Abend- und Nachtmodus unterschiedliche Helfer verwenden.
+            AUS löst keine Fahrt aus. Der Helfer wird von diesem Blueprint nicht zurückgesetzt;
+            für eine erneute Auslösung erst aus- und wieder einschalten.
+            Eine externe Automation kann den Helfer zeitgesteuert ein- und ausschalten.
+            Ohne ausgewählten Helfer ist der Abendmodus deaktiviert.
           default: []
           selector:
             entity:
-              domain: input_datetime
-        evening_sunset_offset:
-          name: Offset zum Sonnenuntergang
-          description: |
-            Löst den Abendmodus zusätzlich zur festen Uhrzeit relativ zum Sonnenuntergang aus (z.B.
-            01:00:00 = eine Stunde nach Sonnenuntergang). Negative Werte lösen vor dem
-            Sonnenuntergang aus.
-          default:
-            hours: 0
-            minutes: 30
-          selector:
-            duration:
-              enable_second: true
-              allow_negative: true
+              domain: input_boolean
         evening_temp_threshold:
           name: Temperatur-Schwelle für den Abendmodus ("nur bei Kälte")
           description: |
             Der Abendmodus schließt nur, wenn die laut Wettervorhersage der Wetter-Entität
-            (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur unter diesem Wert
-            liegt — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder ohne verfügbare
+            (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur höchstens diesem Wert
+            entspricht — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder ohne verfügbare
             Vorhersage wird der Abendmodus wie gehabt ausgelöst (kein Blockieren durch fehlende
             Daten).
           default: 15
@@ -564,7 +554,7 @@ blueprint:
           name: Zielposition für den Abendmodus
           description: |
             Position (in %), auf die der Rollladen im Abendmodus fährt.
-          default: 0
+          default: 20
           selector:
             number:
               min: 0
@@ -572,12 +562,23 @@ blueprint:
               step: 1
               mode: slider
               unit_of_measurement: '%'
+    night_section:
+      name: Nachtmodus
+      description: |
+        Wird über einen gemeinsamen input_boolean-Helfer eingeschaltet. Nutzt getrennte
+        Zielpositionen für geschlossene und offene Fenster sowie eine eigene Temperatur-Schwelle.
+        Die für heute vorhergesagte minimale Tagestemperatur muss höchstens dieser Schwelle
+        entsprechen; ohne gültige Vorhersage entfällt die Temperaturprüfung.
+        Eine laufende Beschattung wird beim Einschalten unabhängig von der Temperatur beendet.
+      icon: mdi:weather-night
+      collapsed: true
+      input:
         night_mode_boolean:
           name: Nachtmodus-Helfer (optional)
           description: |
             Ein input_boolean-Helfer. Wird er eingeschaltet, fährt der Rollladen für die Nacht auf
             die "Zielposition für den Nachtmodus" (bzw. bei offenem Fenster auf die Nachtposition
-            weiter unten) — sofern die Temperatur-Schwelle unterschritten ist. Leer lassen, wenn
+            weiter unten) — sofern die Temperatur-Schwelle nicht überschritten ist. Leer lassen, wenn
             kein Nachtmodus gewünscht ist. In allen Blueprint-Instanzen denselben Helfer auswählen.
           default: []
           selector:
@@ -588,7 +589,7 @@ blueprint:
           description: |
             Der Nachtmodus fährt den Rollladen nur, wenn die laut Wettervorhersage der
             Wetter-Entität (Abschnitt "Wetter") für heute erwartete MINIMALE Tagestemperatur unter
-            diesem Wert liegt — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder
+            oder gleich diesem Wert ist — nicht die aktuelle Temperatur. Ohne gesetzte Wetter-Entität oder
             ohne verfügbare Vorhersage wird der Nachtmodus wie gehabt immer ausgeführt (kein
             Blockieren durch fehlende Daten). Eine laufende Beschattung wird unabhängig davon immer
             beendet.
@@ -618,7 +619,7 @@ blueprint:
           description: |
             Position (in %), auf die nachts (Nachtmodus-Helfer aktiv) gefahren wird, solange das
             Fenster offen ist.
-          default: 10
+          default: 20
           selector:
             number:
               min: 0
@@ -673,18 +674,21 @@ blueprint:
         notification_only_when_home:
           name: Nur Personen benachrichtigen, die zuhause sind
           description: >
-            Prüft für jedes ausgewählte Gerät einzeln, ob seine zugeordnete Person
-            zuhause ist. Geräte ohne eindeutige Zuordnung werden übersprungen.
+            Prüft für jedes ausgewählte Gerät einzeln die zugeordnete Person oder den
+            Anwesenheits-Helfer (input_boolean). Geräte ohne eindeutige Zuordnung
+            werden übersprungen.
             Bei späterer Heimkehr wird keine Benachrichtigung nachgeholt.
           default: false
           selector:
             boolean: {}
         notification_device_persons:
-          name: Personen je Benachrichtigungsgerät
+          name: Anwesenheit je Benachrichtigungsgerät
           description: >
             Füge für jedes oben ausgewählte Gerät einen Eintrag mit der zugehörigen Person
-            hinzu. Eine Person darf mehrere Geräte haben; jedes Gerät darf nur einer Person
-            zugeordnet sein. Die Prüfung verwendet den Zuhause-Status der jeweiligen Person.
+            oder ihrem Anwesenheits-Helfer (input_boolean) hinzu. Dieselbe Entität darf
+            mehreren Geräten zugeordnet sein; jedes Gerät darf nur eine Zuordnung haben.
+            Als anwesend gilt eine Person mit Status home oder ein eingeschalteter Helfer
+            (on). Ausgeschaltete, unbekannte oder nicht verfügbare Helfer gelten nicht als anwesend.
           default: []
           selector:
             object:
@@ -692,11 +696,14 @@ blueprint:
               label_field: person
               fields:
                 person:
-                  label: Person
+                  label: Person oder Anwesenheits-Helfer
                   required: true
                   selector:
                     entity:
-                      domain: person
+                      filter:
+                        - domain:
+                            - person
+                            - input_boolean
                 device:
                   label: Benachrichtigungsgerät
                   required: true
@@ -739,7 +746,6 @@ variables:
   reclose_timeout: !input 'reclose_timeout'
   force_close: !input 'force_close'
   morning_position: !input 'morning_position'
-  evening_enabled: !input 'evening_enabled'
   evening_temp_threshold: !input 'evening_temp_threshold'
   evening_position: !input 'evening_position'
   night_mode_boolean: !input 'night_mode_boolean'
@@ -834,15 +840,11 @@ triggers:
     entity_id: !input 'night_mode_boolean'
     to: 'on'
     id: night_close
-  - trigger: time
-    at: !input 'evening_time'
+  - trigger: state
+    entity_id: !input 'evening_mode_boolean'
+    from: 'off'
+    to: 'on'
     id: evening_close
-    enabled: !input 'evening_enabled'
-  - trigger: sun
-    event: sunset
-    offset: !input 'evening_sunset_offset'
-    id: evening_close
-    enabled: !input 'evening_enabled'
   - trigger: event
     event_type: mobile_app_notification_action
     event_data:
@@ -885,6 +887,14 @@ actions:
           - condition: trigger
             id: morning_open
         sequence:
+          - variables:
+              reclose_scene: scene.reclose_{{ cover_entity | slugify }}
+          - if:
+              - '{{ expand(reclose_scene) | count > 0 }}'
+            then:
+              - action: scene.delete
+                target:
+                  entity_id: '{{ reclose_scene }}'
           - choose:
               - conditions:
                   - '{{ state_attr(cover_entity, ''current_position'') is not none }}'
@@ -1180,7 +1190,8 @@ actions:
                       {% set persons = matches | selectattr('person', 'defined')
                          | map(attribute='person') | unique | list %}
                       {{ persons | length == 1 and persons[0] is string
-                         and is_state(persons[0], 'home') }}
+                         and ((persons[0].startswith('person.') and is_state(persons[0], 'home'))
+                              or (persons[0].startswith('input_boolean.') and is_state(persons[0], 'on'))) }}
                     {% endif %}
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
@@ -1221,10 +1232,6 @@ actions:
           - variables:
               night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
-          - if:
-              - '{{ night_mode_on }}'
-            then:
-              - *refresh_daily_forecast
           - condition: '{{ states(window_sensor) in ["on", "open"] }}'
           - if:
               - |-
@@ -1238,6 +1245,13 @@ actions:
                   scene_id: '{{ ''reclose_'' ~ (cover_entity | slugify) }}'
                   snapshot_entities:
                     - '{{ cover_entity }}'
+          - if:
+              - '{{ night_mode_on }}'
+            then:
+              - *refresh_daily_forecast
+          # Auch während der Wetterabfrage kann der Morgenbefehl die Szene verwerfen.
+          - condition: '{{ expand(reclose_scene) | count > 0 }}'
+          - condition: '{{ states(window_sensor) in ["on", "open"] }}'
           - choose:
               - conditions:
                   - '{{ not night_mode_on or not night_temp_ok }}'
@@ -1280,6 +1294,8 @@ actions:
               minutes: !input 'reclose_timeout'
             continue_on_timeout: true
           - *refresh_daily_forecast
+          # Ohne Rückfahr-Szene darf dieser Lüftungsvorgang keinen Schließbefehl mehr senden.
+          - condition: '{{ expand(reclose_scene) | count > 0 }}'
           - variables:
               night_mode_on_now: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               pause_now: *pause_active_template

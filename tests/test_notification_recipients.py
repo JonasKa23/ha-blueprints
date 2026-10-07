@@ -78,6 +78,38 @@ class NotificationRecipientsTests(unittest.TestCase):
                             'person.anna': anna, 'person.ben': ben,
                         }), expected)
 
+    def test_input_booleans_are_checked_for_each_recipient(self):
+        mappings = [
+            {'person': 'input_boolean.anna_home', 'device': 'anna'},
+            {'person': 'input_boolean.ben_home', 'device': 'ben'},
+        ]
+        for filename in BLUEPRINTS:
+            for anna in ('on', 'off', 'unknown', 'unavailable', None):
+                for ben in ('on', 'off', 'unknown', 'unavailable', None):
+                    with self.subTest(blueprint=filename, anna=anna, ben=ben):
+                        expected = []
+                        if anna == 'on':
+                            expected.append('notify.mobile_app_anna')
+                        if ben == 'on':
+                            expected.append('notify.mobile_app_ben')
+                        self.assertEqual(self.recipients(filename, {
+                            'input_boolean.anna_home': anna,
+                            'input_boolean.ben_home': ben,
+                        }, mappings=mappings), expected)
+
+    def test_person_and_helper_mappings_can_be_mixed(self):
+        mappings = [
+            {'person': 'person.anna', 'device': 'anna'},
+            {'person': 'input_boolean.ben_home', 'device': 'ben'},
+        ]
+        for filename in BLUEPRINTS:
+            self.assertEqual(self.recipients(filename, {
+                'person.anna': 'home', 'input_boolean.ben_home': 'on',
+            }, mappings=mappings), ['notify.mobile_app_anna', 'notify.mobile_app_ben'])
+            self.assertEqual(self.recipients(filename, {
+                'person.anna': 'on', 'input_boolean.ben_home': 'home',
+            }, mappings=mappings), [])
+
     def test_unassigned_and_ambiguous_devices_are_skipped(self):
         for filename in BLUEPRINTS:
             for mappings in ([], [{'device': 'anna'}], [

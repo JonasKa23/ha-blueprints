@@ -19,7 +19,15 @@ Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
   aus bestehenden Instanzen entfernen. Kipp-Erkennung und Moskito-Modus entfallen.
   Bisherige Drei-Zustands-Sensoren müssen durch binäre Kontakte ersetzt werden.
 - Für Sonnenschutz einen eigenen Status-Helfer pro Rollladen auswählen.
-  Morgen-/Abendzeiten benötigen reine Uhrzeit-Helfer ohne Datum.
+  Die Morgenzeit benötigt einen reinen Uhrzeit-Helfer ohne Datum.
+- Der Abendmodus wird ausschließlich über den zentralen Helfer `evening_mode_boolean`
+  ausgelöst. Alte Eingaben `evening_time` und `evening_sunset_offset` aus bestehenden
+  Instanzen entfernen und die Zeitsteuerung in eine externe Automation verlagern,
+  die den Abendmodus-Helfer ein- und ausschaltet.
+- Der zusätzliche Schalter `evening_enabled` entfällt. Alte `evening_enabled`-Eingaben
+  aus bestehenden Instanzen entfernen. Mit ausgewähltem Abendmodus-Helfer ist die Funktion
+  aktiv, auch wenn der bisherige Schalter ausgeschaltet war. Zum Deaktivieren die
+  Helfer-Auswahl leeren.
 - Sonnenheizen ist entfernt. Alte Eingaben `solar_heating_enabled`,
   `solar_heating_status_helper`, `solar_heating_temp_threshold`,
   `solar_heating_temp_hysteresis`, `solar_heating_min_position` und
@@ -47,20 +55,37 @@ wird beim nächsten regulären Takt geprüft.
 
 ## Abend und Nacht
 
-Der standardmäßig deaktivierte Abendmodus prüft sowohl die gewählte feste Uhrzeit
-als auch Sonnenuntergang plus Offset (Standard: 30 Minuten danach). Negative Offsets
-sind möglich. Ohne Uhrzeit-Helfer bleibt nur der Sonnenuntergangs-Trigger.
+Im Blueprint-Formular haben **Abendmodus** und **Nachtmodus** jeweils einen eigenen Abschnitt.
+Der Abendmodus wird ausschließlich über den optionalen zentralen Helfer
+`evening_mode_boolean` ausgelöst. Ohne ausgewählten Helfer ist er deaktiviert.
+Eine externe Automation kann diesen Helfer
+zur gewünschten Uhrzeit oder zum Sonnenuntergang einschalten. Im Blueprint gibt es
+keine eigenen Abend-Auslöser für Uhrzeit oder Sonnenuntergang mehr.
 Der Abendmodus führt eine einzelne Fahrt aus und speichert keinen eigenen Zustand.
-Beide Abendtermine prüfen ihre Bedingungen erneut. Der Rollladen fährt nur bei
+Jedes Einschalten prüft die Bedingungen erneut. Der Rollladen fährt nur bei
 geschlossenem Fenster und ohne aktiven Nachtmodus auf `evening_position`,
 und nur, wenn er aktuell weiter geöffnet ist. Bei offenem Fenster entfällt die Fahrt;
 sie wird beim späteren Schließen nicht eigens nachgeholt.
+Die Standard-Zielposition beträgt abends 20 %, nachts bei geschlossenem Fenster 0 %
+und nachts bei offenem Fenster 20 %.
+Die Prozentwerte beziehen sich auf die Motorposition; den tatsächlichen Lichtspalt
+am jeweiligen Rollladen prüfen. Explizit gespeicherte Zielpositionen in bestehenden
+Automationen bleiben von einer Änderung des Blueprint-Standardwerts unberührt.
+
+Für eine zentrale Abendfahrt in allen gewünschten Instanzen unter
+**Zentraler Abendmodus-Helfer (optional)** denselben input_boolean
+auswählen. Einen anderen Helfer als für den Nachtmodus verwenden. Nur der Wechsel von
+`off` auf `on` löst aus; eine Pause und die übrigen Abendbedingungen gelten weiterhin.
+Ausschalten bewegt keinen Rollladen. Der Blueprint setzt den gemeinsamen Helfer nicht
+zurück: Vor der nächsten Auslösung muss er wieder ausgeschaltet werden. Ein dauerhaft
+eingeschalteter Helfer bewirkt keine weiteren Fahrten und keine Beschattungssperre.
+Ohne ausgewählten Abendmodus-Helfer wird keine Abendfahrt ausgelöst.
 
 Ein zusätzlicher Datum-und-Uhrzeit-Helfer oder eine Abend-Endzeit ist nicht erforderlich.
 Nachtmodus und morgendliches Öffnen übernehmen über ihre jeweiligen Auslöser.
 Falls bereits konfiguriert, die Eingaben `evening_until_helper` und `evening_end_time`
 aus der Automation entfernen. Ein eventuell angelegter Helfer wird nicht mehr verwendet.
-Die bestehende Fenster-Rückfahr-Logik bleibt erhalten.
+Die Fenster-Rückfahr-Logik wird durch den Morgenbefehl wie unten beschrieben aufgehoben.
 
 Der Nachtmodus wird durch einen input_boolean eingeschaltet. Bei geschlossenem Fenster
 wird `night_closed_position`, bei offenem Fenster `night_ventilation_position` verwendet.
@@ -74,7 +99,30 @@ angewendet. Ist es zu warm, gilt beim Öffnen die Tages-Lüftungsposition und be
 wird die vorherige Position wiederhergestellt. Eine Pause verhindert das Zurückfahren.
 Der Nachtmodus-Helfer blockiert den Sonnenschutz unabhängig von der Temperatur.
 
+## Morgens öffnen während des Lüftens
+
+Der Morgenbefehl hat Vorrang vor einem bereits laufenden Lüftungsvorgang. Er verwirft
+die gespeicherte Rückfahrposition, auch wenn der Rollladen die Morgenzielposition bereits
+erreicht hat und deshalb keine weitere Öffnungsfahrt nötig ist.
+
+Beispiel: geschlossen (0 %) → Lüftungsposition (35 %) → Morgenbefehl (100 %) →
+Fenster schließen: Der Rollladen bleibt bei 100 %.
+Für diesen Lüftungsvorgang entfallen auch die Rückfahrt zur Nachtposition und
+„Schließen erzwingen“ nach Ablauf des Zeitfensters. Ein durch die Pause blockierter
+Morgenbefehl hebt die Rückfahrt nicht auf.
+
+Beim nächsten Öffnen des Fensters wird wieder eine neue Ausgangsposition gespeichert.
+Andere, später ausgelöste Fahrbefehle (etwa Nachtmodus oder Sonnenschutz) gelten weiterhin.
+Technisch wird die dynamische Rückfahr-Szene mit
+[`scene.delete`](https://www.home-assistant.io/integrations/scene/#deleting-dynamically-created-scenes)
+entfernt; der Lüftungsvorgang prüft nach seinen Wartephasen, ob sie noch vorhanden ist.
+
 ## Sonnenschutz
+
+Das Sichtfeld beträgt standardmäßig links und rechts jeweils 45° relativ zur
+Fensterausrichtung. Die minimale Beschattungsposition beträgt 20 %.
+Die maximal erlaubte Sonneneinfall-Tiefe beträgt standardmäßig 0,5 m, auf dem
+Fußboden ab der Fensterebene gemessen.
 
 ### Gemeinsame Freigabe
 
@@ -117,27 +165,31 @@ bei Startschwelle 23 °C und Hysterese 2 °C auch zwischen 21 und 23 °C.
 Bei 21 °C oder darunter endet sie. Ein fehlender Messwert allein löst keine Fahrt aus.
 
 Bei erzwungener Beschattung bestimmt `shading_min_position` den Mindestspalt, auch bei
-offenem Fenster. Der Standard ist 25 %; ein eingestellter Wert von 0 % lässt vollständiges Schließen zu; für Terrassentüren
+offenem Fenster. Der Standard ist 20 %; ein eingestellter Wert von 0 % lässt vollständiges Schließen zu; für Terrassentüren
 ist diese Option wegen Aussperr-Gefahr nicht empfohlen.
 
 ## Benachrichtigungen bei Anwesenheit
 
 Unter **Benachrichtigungen** lässt sich **Nur Personen benachrichtigen, die zuhause sind**
 einschalten. Standardmäßig ist die Prüfung ausgeschaltet. Wähle die gewünschten
-**Benachrichtigungs-Geräte** aus und füge unter **Personen je Benachrichtigungsgerät**
-für jedes Gerät einen Eintrag mit seiner Person hinzu. Eine Person kann mehrere Geräte
-haben. Die Zuordnung erfolgt ausdrücklich über das Gerät, nicht über die Reihenfolge
+**Benachrichtigungs-Geräte** aus und füge unter **Anwesenheit je Benachrichtigungsgerät**
+für jedes Gerät einen Eintrag mit seiner Person oder ihrem Anwesenheits-Helfer
+(`input_boolean`) hinzu. Dieselbe Entität kann mehreren Geräten zugeordnet werden.
+Die Zuordnung erfolgt ausdrücklich über das Gerät, nicht über die Reihenfolge
 in den Auswahllisten.
 
 Bei aktivierter Prüfung wird unmittelbar vor jeder Nachricht nur die zu diesem Gerät
-gehörende Person geprüft. Beispiel: Anna ist zuhause, Ben unterwegs → nur Annas Gerät
+gehörende Entität geprüft: Bei einer Person bedeutet `home` anwesend, bei einem
+`input_boolean` bedeutet `on` anwesend und `off` abwesend.
+Beispiel: Annas Helfer ist eingeschaltet, Bens Helfer ausgeschaltet → nur Annas Gerät
 erhält die Erinnerung. Sind beide zuhause, erhalten beide die Nachricht; ist niemand
 zuhause, erhält niemand eine Nachricht. Ohne eindeutige Zuordnung oder bei unbekanntem
-bzw. nicht verfügbarem Personenstatus wird das betreffende Gerät übersprungen.
+bzw. nicht verfügbarem Status wird das betreffende Gerät übersprungen.
 Bei späterer Heimkehr wird keine Nachricht nachgeholt. Bereits gesendete Meldungen
 werden beim Schließen des Fensters weiterhin auf allen ausgewählten Geräten entfernt.
 
-Auch bei nur einem Gerät wird die Person über die Zuordnungsliste festgelegt.
+Auch bei nur einem Gerät wird die Anwesenheitsentität über die Zuordnungsliste festgelegt.
+Bestehende Zuordnungen zu Personen bleiben gültig; Personen und Helfer lassen sich mischen.
 
 Die Zuordnung verwendet ein Formular mit wiederholbaren Einträgen
 ([Home-Assistant-Objektselektor](https://www.home-assistant.io/docs/blueprint/selectors/#object-selector)).

@@ -1,0 +1,159 @@
+# ENTWURF — Grenzwerte und Zeitfenster vor Einsatz anhand realer Historie festlegen.
+blueprint:
+  name: Schlafzimmer – Heizdecke unabhängig überwachen
+  description: >-
+    Gilt bei jedem Einschalten, auch manuell. Unterlast meldet; bestätigte
+    Überlast und optionale maximale Einschaltzeit schalten aus und melden.
+    Zeitfenster beziehen sich auf die von HA beobachteten Zustände.
+  domain: automation
+  source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/heizdecke_leistung.yaml
+  homeassistant:
+    min_version: '2024.10.0'
+  input:
+    steckdose:
+      name: Heizdecken-Steckdose
+      description: Verifizierte switch-Entity; Pflichtauswahl.
+      selector:
+        entity:
+          filter:
+            - domain: switch
+    leistung:
+      name: Leistungsaufnahme
+      description: Verifizierter Leistungssensor derselben Steckdose; Einheit muss W sein.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: power
+    unten_w:
+      name: Unterer Schwellwert
+      description: Beispielwert; anhand Standby-Verbrauch und Heiztakten kalibrieren.
+      default: 2
+      selector:
+        number: {min: 0, max: 500, step: 0.1, unit_of_measurement: W, mode: box}
+    unten_min:
+      name: Unterlast-Zeitfenster
+      description: Länger als die längste normale Heizpause wählen; durchgehend unter Grenze.
+      default: 15
+      selector:
+        number: {min: 1, max: 120, step: 1, unit_of_measurement: min, mode: box}
+    oben_w:
+      name: Oberer Schwellwert
+      description: Pflichtwert aus Nennleistung und normalen Spitzen ableiten; kein geratener Default.
+      selector:
+        number: {min: 1, max: 3680, step: 1, unit_of_measurement: W, mode: box}
+    oben_s:
+      name: Überlast-Bestätigungsfenster
+      description: Danach sofort aus; passend zum Messintervall wählen, keine Einzelwert-Reaktion.
+      default: 30
+      selector:
+        number: {min: 1, max: 300, step: 1, unit_of_measurement: s, mode: box}
+    dauerlimit_aktiv:
+      name: Zusätzliche maximale Einschaltzeit aktivieren
+      description: >-
+        Standardmäßig deaktiviert, da die Heizdecke eine eigene zeitliche
+        Notabschaltung besitzt. Optional für alle Einschaltungen aktivierbar,
+        auch wiederholt gestartete Heizscripts.
+      default: false
+      selector:
+        boolean: {}
+    dauerlimit_min:
+      name: Maximale ununterbrochene Einschaltzeit
+      description: Unabhängige Obergrenze; wird durch Script-Neustart bei weiter eingeschalteter Dose nicht verlängert.
+      default: 120
+      selector:
+        number: {min: 1, max: 240, step: 1, unit_of_measurement: min, mode: box}
+    benachrichtigung:
+      name: Zusätzliche Benachrichtigungsaktion (optional)
+      description: "notify-Aktion mit message: '{{ meldung }}'; HA-Meldung erfolgt immer."
+      default: []
+      selector:
+        action: {}
+# Parallel: Eine Unterlast-Benachrichtigung darf eine Überlastabschaltung nicht blockieren.
+mode: parallel
+max: 10
+trigger_variables:
+  steckdose: !input steckdose
+  leistung: !input leistung
+  unten_w: !input unten_w
+  oben_w: !input oben_w
+variables:
+  steckdose: !input steckdose
+  leistung: !input leistung
+triggers:
+  # Gemeinsame Bedingung vermeidet verpasste Unterlast beim Einschalten mit bereits 0 W.
+  - trigger: template
+    id: unterlast
+    value_template: >-
+      {{ is_state(steckdose, 'on') and is_number(states(leistung))
+         and states(leistung) | float(0) < unten_w | float }}
+    for:
+      minutes: !input unten_min
+  - trigger: template
+    id: ueberlast
+    value_template: >-
+      {{ is_state(steckdose, 'on') and is_number(states(leistung))
+         and states(leistung) | float(0) > oben_w | float }}
+    for:
+      seconds: !input oben_s
+  # Absichtlich generischer Zustandstrigger: Auch Wiederkehr aus unavailable nach on zählt.
+  - trigger: state
+    id: dauerlimit
+    enabled: !input dauerlimit_aktiv
+    entity_id: !input steckdose
+    to: 'on'
+    for:
+      minutes: !input dauerlimit_min
+conditions:
+  - condition: state
+    entity_id: !input steckdose
+    state: 'on'
+actions:
+  - variables:
+      meldung: >-
+        Heizdecke: {{ trigger.id }} erkannt. Aktuelle Leistung:
+        {{ states(leistung) }} W.
+  - if:
+      - condition: trigger
+        id: [ueberlast, dauerlimit]
+    then:
+      # Vor jeglicher Benachrichtigung ausschalten.
+      - action: switch.turn_off
+        target:
+          entity_id: !input steckdose
+        continue_on_error: true
+      - if:
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: !input steckdose
+                state: 'off'
+        then:
+          - wait_for_trigger:
+              - trigger: state
+                entity_id: !input steckdose
+                to: 'off'
+            timeout: '00:00:10'
+            continue_on_timeout: true
+      - variables:
+          meldung: >-
+            {{ meldung }} Abschaltversuch durchgeführt.
+            {% if is_state(steckdose, 'off') %}
+              Zustand off bestätigt.
+            {% else %}
+              ACHTUNG: Ausschalten NICHT bestätigt; Zustand {{ states(steckdose) }}.
+              Decke/Steckdose vor Ort prüfen.
+            {% endif %}
+    else:
+      - variables:
+          meldung: >-
+            {{ meldung }} Dauerhaft geringe Leistung bei eingeschalteter Steckdose:
+            Decke möglicherweise am Gerät ausgeschaltet, nicht angesteckt
+            oder durch ihre eigene zeitliche Notabschaltung beendet.
+            Keine automatische Abschaltung wegen Unterlast.
+  - action: persistent_notification.create
+    data:
+      title: Heizdecke – Überwachung
+      message: '{{ meldung }}'
+    continue_on_error: true
+  - sequence: !input benachrichtigung
