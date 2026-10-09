@@ -265,7 +265,7 @@ class HeatingTest(unittest.TestCase):
         example = yaml.safe_load((ROOT / f"examples/heating/{room}.yaml").read_text())
         self.inputs.update(example["use_blueprint"]["input"])
         for entity in self.inputs["presence_entity"]:
-            self.entity(entity, "home")
+            self.entity(entity, "on" if entity.startswith(("input_boolean.", "binary_sensor.")) else "home")
 
     def test_room_plans_match_user_schedule_at_every_boundary(self):
         # Independent acceptance table from the user's plan; includes the desired
@@ -338,10 +338,10 @@ class HeatingTest(unittest.TestCase):
             self.load_room(room)
             self.assertEqual(self.inputs["away_delay"], 0)
             for entity in self.inputs["presence_entity"]:
-                self.entity(entity, "not_home", age=0)
+                self.entity(entity, "off" if entity.startswith(("input_boolean.", "binary_sensor.")) else "not_home", age=0)
             self.assertEqual(self.evaluate()["desired_preset"], "away")
             first = self.inputs["presence_entity"][0]
-            self.entity(first, "home", age=0)
+            self.entity(first, "on" if first.startswith(("input_boolean.", "binary_sensor.")) else "home", age=0)
             result = self.evaluate()
             self.assertEqual(result["presence_status"], "home")
             self.assertEqual(result["desired_preset"], result["schedule_info"]["preset"])

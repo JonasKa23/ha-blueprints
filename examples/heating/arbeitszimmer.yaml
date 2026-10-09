@@ -9,11 +9,11 @@ use_blueprint:
   path: JonasKa23/smart_heating_schedule.yaml
   input:
     thermostat_entities:
-      - climate.ersetzen_arbeitszimmer_better_thermostat
+      - climate.arbeitszimmer_thermostat_bt
     enable_presence_mode: true
     presence_entity:
-      - person.ersetzen_person_1
-      - person.ersetzen_person_2
+      - input_boolean.controlroom_home_jonas
+      - input_boolean.controlroom_home_franzi
     vacation_preset: away
     away_delay: 0
     enable_pause_switch: false
