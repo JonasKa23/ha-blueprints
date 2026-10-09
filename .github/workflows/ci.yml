@@ -40,6 +40,6 @@ jobs:
             python3 skills/ha-blueprint-dev/scripts/validate_blueprint.py "$f"
           done
 
-      - name: Cover logic regression checks
+      - name: Blueprint and upstream regression checks
         if: ${{ !cancelled() }}
         run: python -m unittest discover -s tests

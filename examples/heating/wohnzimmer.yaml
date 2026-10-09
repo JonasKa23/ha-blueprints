@@ -1,0 +1,50 @@
+# Vorlage für den YAML-Editor einer einzelnen Automation.
+# Zeitplan aus der Nutzerübersicht vom 09.10.2026; Bestätigungsstand siehe Dokumentation.
+# Bei drei Umschaltungen wiederholt Slot 4 um 23:59 das Nacht-Preset ohne Temperaturwechsel.
+# Nach Einrichtung initial_state: false entfernen und die Automation einschalten.
+alias: Heizplan – Wohnzimmer
+description: "Vorlage: ersetzen_-Entitäten austauschen, Zeitplan und Preset-Temperaturen prüfen; siehe docs/smart_heating_schedule.md."
+initial_state: false
+use_blueprint:
+  path: JonasKa23/smart_heating_schedule.yaml
+  input:
+    thermostat_entities:
+      - climate.ersetzen_wohnzimmer_better_thermostat
+    enable_presence_mode: true
+    presence_entity:
+      - person.ersetzen_person_1
+      - person.ersetzen_person_2
+    vacation_preset: away
+    away_delay: 0
+    enable_pause_switch: false
+    pause_switch: []
+    enable_manual_override: false
+    manual_override_button: []
+    manual_override_timer: []
+    manual_override_minutes: 120
+    enable_slot5: false
+    notification_actions: []
+    slot1_time_weekday: "00:00:00"
+    slot1_preset_weekday: sleep
+    slot2_time_weekday: "06:00:00"
+    slot2_preset_weekday: home
+    slot3_time_weekday: "22:00:00"
+    slot3_preset_weekday: sleep
+    slot4_time_weekday: "23:59:00"
+    slot4_preset_weekday: sleep
+    slot1_time_saturday: "00:00:00"
+    slot1_preset_saturday: sleep
+    slot2_time_saturday: "07:00:00"
+    slot2_preset_saturday: home
+    slot3_time_saturday: "22:30:00"
+    slot3_preset_saturday: sleep
+    slot4_time_saturday: "23:59:00"
+    slot4_preset_saturday: sleep
+    slot1_time_sunday: "00:00:00"
+    slot1_preset_sunday: sleep
+    slot2_time_sunday: "07:00:00"
+    slot2_preset_sunday: home
+    slot3_time_sunday: "22:30:00"
+    slot3_preset_sunday: sleep
+    slot4_time_sunday: "23:59:00"
+    slot4_preset_sunday: sleep
