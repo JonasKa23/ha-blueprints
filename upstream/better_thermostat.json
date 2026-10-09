@@ -1,0 +1,8 @@
+{
+  "repository": "KartoffelToby/better_thermostat",
+  "branch": "master",
+  "path": "blueprints/weekly_heating_schedule.yaml",
+  "reviewed_commit": "5b4496de5659fd2c6ec5c67a9797e6659797866c",
+  "reviewed_blob": "3255957740ec44285d866d8be7d78bf905c1257c",
+  "local_path": "automations/smart_heating_schedule.yaml"
+}

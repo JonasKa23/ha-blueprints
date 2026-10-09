@@ -1,0 +1,614 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Derived from KartoffelToby/better_thermostat, commit 5b4496de5659fd2c6ec5c67a9797e6659797866c.
+# Modified 2026-10-09: previous-day schedule, conservative presence, recovery, fifth slot, timed pause.
+# Original license: ../LICENSES/Better-Thermostat-AGPL-3.0.txt
+blueprint:
+  name: Smart Heating Schedule – Wochenplan mit Anwesenheit
+  description: |
+    Vier oder optional fünf Zeitfenster für Montag–Freitag, Samstag und Sonntag.
+    Vor dem ersten Slot gilt der letzte Slot des Vortags. Unsichere Anwesenheit und
+    Pausen sperren Änderungen. Ein minütlicher Abgleich holt Neustarts und die
+    Rückkehr nicht verfügbarer Thermostate nach. Nur abweichende Presets werden gesetzt.
+
+    Abgeleitet von Better Thermostat: Weekly Heating Schedule.
+    Pro Raum eine Automation; Temperaturen werden in Better Thermostat konfiguriert.
+    Dokumentation: https://github.com/JonasKa23/ha-blueprints/blob/main/docs/smart_heating_schedule.md
+  domain: automation
+  author: "KartoffelToby / Better Thermostat contributors; Anpassungen: JonasKa23"
+  homeassistant:
+    min_version: 2026.9.0
+  source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/smart_heating_schedule.yaml
+  input:
+    assignment:
+      name: Thermostate
+      input:
+        thermostat_entities:
+          name: Better-Thermostat-Entitäten
+          description:
+            Pro Raum eine Automation. Die gewählten Entitäten müssen die verwendeten Presets
+            unterstützen.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - climate
+              multiple: true
+    slot1:
+      name: Slot 1
+      description: Zeiten pro Tagestyp streng aufsteigend einstellen; gleiche Zeiten sind ungültig.
+      collapsed: false
+      input:
+        slot1_time_weekday:
+          name: Startzeit Montag–Freitag
+          default: 06:30:00
+          selector:
+            time: {}
+        slot1_preset_weekday:
+          name: Preset Montag–Freitag
+          default: comfort
+          selector: &id001
+            select:
+              options:
+                - label: None (normal)
+                  value: none
+                - label: Eco
+                  value: eco
+                - label: Away
+                  value: away
+                - label: Boost
+                  value: boost
+                - label: Comfort
+                  value: comfort
+                - label: Home
+                  value: home
+                - label: Sleep
+                  value: sleep
+                - label: Activity
+                  value: activity
+        slot1_time_saturday:
+          name: Startzeit Samstag
+          default: 08:00:00
+          selector:
+            time: {}
+        slot1_preset_saturday:
+          name: Preset Samstag
+          default: sleep
+          selector: *id001
+        slot1_time_sunday:
+          name: Startzeit Sonntag
+          default: 08:00:00
+          selector:
+            time: {}
+        slot1_preset_sunday:
+          name: Preset Sonntag
+          default: sleep
+          selector: *id001
+    slot2:
+      name: Slot 2
+      description: Zeiten pro Tagestyp streng aufsteigend einstellen; gleiche Zeiten sind ungültig.
+      collapsed: false
+      input:
+        slot2_time_weekday:
+          name: Startzeit Montag–Freitag
+          default: 08:30:00
+          selector:
+            time: {}
+        slot2_preset_weekday:
+          name: Preset Montag–Freitag
+          default: eco
+          selector: *id001
+        slot2_time_saturday:
+          name: Startzeit Samstag
+          default: "10:00:00"
+          selector:
+            time: {}
+        slot2_preset_saturday:
+          name: Preset Samstag
+          default: comfort
+          selector: *id001
+        slot2_time_sunday:
+          name: Startzeit Sonntag
+          default: "10:00:00"
+          selector:
+            time: {}
+        slot2_preset_sunday:
+          name: Preset Sonntag
+          default: comfort
+          selector: *id001
+    slot3:
+      name: Slot 3
+      description: Zeiten pro Tagestyp streng aufsteigend einstellen; gleiche Zeiten sind ungültig.
+      collapsed: false
+      input:
+        slot3_time_weekday:
+          name: Startzeit Montag–Freitag
+          default: "17:00:00"
+          selector:
+            time: {}
+        slot3_preset_weekday:
+          name: Preset Montag–Freitag
+          default: comfort
+          selector: *id001
+        slot3_time_saturday:
+          name: Startzeit Samstag
+          default: "17:00:00"
+          selector:
+            time: {}
+        slot3_preset_saturday:
+          name: Preset Samstag
+          default: comfort
+          selector: *id001
+        slot3_time_sunday:
+          name: Startzeit Sonntag
+          default: "17:00:00"
+          selector:
+            time: {}
+        slot3_preset_sunday:
+          name: Preset Sonntag
+          default: comfort
+          selector: *id001
+    slot4:
+      name: Slot 4
+      description: Zeiten pro Tagestyp streng aufsteigend einstellen; gleiche Zeiten sind ungültig.
+      collapsed: false
+      input:
+        slot4_time_weekday:
+          name: Startzeit Montag–Freitag
+          default: "22:30:00"
+          selector:
+            time: {}
+        slot4_preset_weekday:
+          name: Preset Montag–Freitag
+          default: sleep
+          selector: *id001
+        slot4_time_saturday:
+          name: Startzeit Samstag
+          default: "23:30:00"
+          selector:
+            time: {}
+        slot4_preset_saturday:
+          name: Preset Samstag
+          default: sleep
+          selector: *id001
+        slot4_time_sunday:
+          name: Startzeit Sonntag
+          default: "22:30:00"
+          selector:
+            time: {}
+        slot4_preset_sunday:
+          name: Preset Sonntag
+          default: sleep
+          selector: *id001
+    slot5:
+      name: Slot 5
+      description: Zeiten pro Tagestyp streng aufsteigend einstellen; gleiche Zeiten sind ungültig.
+      collapsed: true
+      input:
+        enable_slot5:
+          name: Fünften Slot aktivieren
+          default: false
+          selector:
+            boolean: {}
+        slot5_time_weekday:
+          name: Startzeit Montag–Freitag
+          default: "23:45:00"
+          selector:
+            time: {}
+        slot5_preset_weekday:
+          name: Preset Montag–Freitag
+          default: sleep
+          selector: *id001
+        slot5_time_saturday:
+          name: Startzeit Samstag
+          default: "23:45:00"
+          selector:
+            time: {}
+        slot5_preset_saturday:
+          name: Preset Samstag
+          default: sleep
+          selector: *id001
+        slot5_time_sunday:
+          name: Startzeit Sonntag
+          default: "23:45:00"
+          selector:
+            time: {}
+        slot5_preset_sunday:
+          name: Preset Sonntag
+          default: sleep
+          selector: *id001
+    presence:
+      name: Anwesenheit
+      input:
+        enable_presence_mode:
+          name: Abwesenheitsmodus aktivieren
+          default: false
+          selector:
+            boolean: {}
+        presence_entity:
+          name: Personen oder Anwesenheits-Helfer
+          description:
+            Mindestens eine Entität home/on bedeutet anwesend. Nur sicher abwesende Entitäten
+            erlauben away. Bei unklarem Status oder leerer aktivierter Auswahl bleibt das Preset unverändert.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - person
+                    - device_tracker
+                    - binary_sensor
+                    - input_boolean
+              multiple: true
+          default: []
+        vacation_preset:
+          name: Preset bei Abwesenheit
+          default: away
+          selector: *id001
+        away_delay:
+          name: Abwesenheit bestätigen nach
+          default: 2
+          selector:
+            number:
+              min: 0
+              max: 60
+              step: 1
+              mode: box
+              unit_of_measurement: min
+    pause:
+      name: Pausen und manuelle Übersteuerung
+      input:
+        enable_pause_switch:
+          name: Dauerhafte Pause aktivieren
+          default: false
+          selector:
+            boolean: {}
+        pause_switch:
+          name: Pause-Helfer
+          description:
+            Sobald ein Helfer on ist, pausiert der Plan. Unbekannte oder fehlende Helfer blockieren
+            ebenfalls; eine leere aktivierte Auswahl blockiert den Plan.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - input_boolean
+              multiple: true
+          default: []
+        enable_manual_override:
+          name: Zeitlich begrenzte manuelle Pause aktivieren
+          default: false
+          selector:
+            boolean: {}
+        manual_override_button:
+          name: Taster für manuelle Pause
+          description:
+            Taster drücken, danach Temperatur oder Preset manuell einstellen. Erneutes Drücken
+            startet die Dauer neu. Änderungen am Thermostat starten den Timer nicht automatisch.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - input_button
+              multiple: false
+          default: []
+        manual_override_timer:
+          name: Timer für manuelle Pause
+          description:
+            Eigener Timer je Raum, mit Wiederherstellung nach Neustart. Aktiv oder pausiert
+            sperrt den Plan; idle gibt ihn frei. Abbrechen beendet die Pause vorzeitig.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - timer
+              multiple: false
+          default: []
+        manual_override_minutes:
+          name: Dauer der manuellen Pause
+          default: 120
+          selector:
+            number:
+              min: 1
+              max: 1440
+              step: 1
+              mode: box
+              unit_of_measurement: min
+    notifications:
+      name: Benachrichtigungen und Diagnose
+      input:
+        notification_actions:
+          name: Benachrichtigungsaktionen
+          description:
+            "Optional nach einem Preset-Aufruf. Verfügbare Variablen: heating_entity, desired_preset,
+            schedule_info, presence_status. Behandelbare Laufzeitfehler werden übergangen;
+            keine langen Warteaktionen verwenden."
+          default: []
+          selector:
+            action: {}
+        enable_debug:
+          name: Diagnose ins Systemprotokoll schreiben
+          default: false
+          selector:
+            boolean: {}
+
+mode: queued
+max: 10
+max_exceeded: silent
+trace:
+  stored_traces: 20
+
+variables:
+  thermostat_entities: !input thermostat_entities
+  enable_slot5: !input enable_slot5
+  enable_presence_mode: !input enable_presence_mode
+  presence_entity: !input presence_entity
+  vacation_preset: !input vacation_preset
+  away_delay: !input away_delay
+  enable_pause_switch: !input enable_pause_switch
+  pause_switch: !input pause_switch
+  enable_manual_override: !input enable_manual_override
+  manual_override_button: !input manual_override_button
+  manual_override_timer: !input manual_override_timer
+  manual_override_minutes: !input manual_override_minutes
+  enable_debug: !input enable_debug
+  schedule_days:
+    weekday:
+      - time: !input slot1_time_weekday
+        preset: !input slot1_preset_weekday
+      - time: !input slot2_time_weekday
+        preset: !input slot2_preset_weekday
+      - time: !input slot3_time_weekday
+        preset: !input slot3_preset_weekday
+      - time: !input slot4_time_weekday
+        preset: !input slot4_preset_weekday
+      - time: !input slot5_time_weekday
+        preset: !input slot5_preset_weekday
+    saturday:
+      - time: !input slot1_time_saturday
+        preset: !input slot1_preset_saturday
+      - time: !input slot2_time_saturday
+        preset: !input slot2_preset_saturday
+      - time: !input slot3_time_saturday
+        preset: !input slot3_preset_saturday
+      - time: !input slot4_time_saturday
+        preset: !input slot4_preset_saturday
+      - time: !input slot5_time_saturday
+        preset: !input slot5_preset_saturday
+    sunday:
+      - time: !input slot1_time_sunday
+        preset: !input slot1_preset_sunday
+      - time: !input slot2_time_sunday
+        preset: !input slot2_preset_sunday
+      - time: !input slot3_time_sunday
+        preset: !input slot3_preset_sunday
+      - time: !input slot4_time_sunday
+        preset: !input slot4_preset_sunday
+      - time: !input slot5_time_sunday
+        preset: !input slot5_preset_sunday
+
+triggers:
+  - trigger: time
+    at: !input slot1_time_weekday
+    id: schedule
+  - trigger: time
+    at: !input slot1_time_saturday
+    id: schedule
+  - trigger: time
+    at: !input slot1_time_sunday
+    id: schedule
+  - trigger: time
+    at: !input slot2_time_weekday
+    id: schedule
+  - trigger: time
+    at: !input slot2_time_saturday
+    id: schedule
+  - trigger: time
+    at: !input slot2_time_sunday
+    id: schedule
+  - trigger: time
+    at: !input slot3_time_weekday
+    id: schedule
+  - trigger: time
+    at: !input slot3_time_saturday
+    id: schedule
+  - trigger: time
+    at: !input slot3_time_sunday
+    id: schedule
+  - trigger: time
+    at: !input slot4_time_weekday
+    id: schedule
+  - trigger: time
+    at: !input slot4_time_saturday
+    id: schedule
+  - trigger: time
+    at: !input slot4_time_sunday
+    id: schedule
+  - trigger: time
+    at: !input slot5_time_weekday
+    id: schedule
+    enabled: !input enable_slot5
+  - trigger: time
+    at: !input slot5_time_saturday
+    id: schedule
+    enabled: !input enable_slot5
+  - trigger: time
+    at: !input slot5_time_sunday
+    id: schedule
+    enabled: !input enable_slot5
+  - trigger: time_pattern
+    minutes: /1
+    id: reconcile
+  - trigger: homeassistant
+    event: start
+    id: startup
+  - trigger: state
+    entity_id: !input presence_entity
+    to: null
+    enabled: !input enable_presence_mode
+    id: presence
+  - trigger: state
+    entity_id: !input pause_switch
+    to: null
+    enabled: !input enable_pause_switch
+    id: pause
+  - trigger: state
+    entity_id: !input manual_override_timer
+    to: null
+    enabled: !input enable_manual_override
+    id: override_timer
+  - trigger: button.pressed
+    target:
+      entity_id: !input manual_override_button
+    enabled: !input enable_manual_override
+    id: override_button
+
+actions:
+  # Only a real button press starts a timer, never restoring the button at startup.
+  - if:
+      - condition: trigger
+        id: override_button
+    then:
+      - condition: template
+        value_template: >-
+          {{ enable_manual_override
+             and manual_override_timer is string
+             and states(manual_override_timer) in ['idle', 'active', 'paused'] }}
+      - action: timer.start
+        target:
+          entity_id: "{{ manual_override_timer }}"
+        data:
+          duration: "{{ (manual_override_minutes | int) * 60 }}"
+      - stop: Manuelle Pause gestartet.
+  # Evaluate here, when the queued run actually executes, never before a delay.
+  - variables:
+      selected_thermostats: >-
+        {{ [thermostat_entities] if thermostat_entities is string else thermostat_entities }}
+      presence_entities: >-
+        {{ [presence_entity] if presence_entity is string else presence_entity }}
+      pause_entities: >-
+        {{ [pause_switch] if pause_switch is string else pause_switch }}
+      normalized_days: >-
+        {% set ns = namespace(days={}) %}
+        {% for day, slots in schedule_days.items() %}
+          {% set entries = namespace(slots=[]) %}
+          {% for slot in slots %}
+            {% set parts = slot.time.split(':') %}
+            {% set seconds = (parts[0] | int) * 3600 + (parts[1] | int) * 60
+                             + (parts[2] | int if parts | length > 2 else 0) %}
+            {% set entries.slots = entries.slots + [dict(seconds=seconds, preset=slot.preset)] %}
+          {% endfor %}
+          {% set ns.days = dict(ns.days, **{day: entries.slots}) %}
+        {% endfor %}
+        {{ ns.days }}
+  - repeat:
+      for_each: "{{ selected_thermostats }}"
+      sequence:
+        - variables:
+            heating_entity: "{{ repeat.item }}"
+            schedule_info: >-
+              {% set count = 5 if enable_slot5 else 4 %}
+              {% set ns = namespace(valid=true, selected={}) %}
+              {% for day, slots in normalized_days.items() %}
+                {% for slot in slots[:count] %}
+                  {% if loop.index0 > 0 and slot.seconds <= slots[loop.index0 - 1].seconds %}
+                    {% set ns.valid = false %}
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+              {% set current = now() %}
+              {% set day = 'saturday' if current.weekday() == 5 else
+                           'sunday' if current.weekday() == 6 else 'weekday' %}
+              {% set previous = (current.weekday() - 1) % 7 %}
+              {% set previous_day = 'saturday' if previous == 5 else
+                                    'sunday' if previous == 6 else 'weekday' %}
+              {% set ns.selected = dict(preset=normalized_days[previous_day][count - 1].preset,
+                                        slot=count, day=previous_day, previous_day=true) %}
+              {% set current_seconds = current.hour * 3600 + current.minute * 60 + current.second %}
+              {% for slot in normalized_days[day][:count] %}
+                {% if current_seconds >= slot.seconds %}
+                  {% set ns.selected = dict(preset=slot.preset, slot=loop.index,
+                                            day=day, previous_day=false) %}
+                {% endif %}
+              {% endfor %}
+              {{ dict(ns.selected, valid=ns.valid) }}
+            presence_status: >-
+              {% set ns = namespace(home=false, uncertain=false, pending=false) %}
+              {% if not enable_presence_mode %}
+                {{ 'home' }}
+              {% elif presence_entities | length == 0 %}
+                {{ 'uncertain' }}
+              {% else %}
+                {% for entity in presence_entities %}
+                  {% set value = states(entity) %}
+                  {% set domain = entity.split('.')[0] %}
+                  {% if (domain in ['person', 'device_tracker'] and value == 'home')
+                        or (domain in ['binary_sensor', 'input_boolean'] and value == 'on') %}
+                    {% set ns.home = true %}
+                  {% elif value in ['unknown', 'unavailable', '']
+                          or domain not in ['person', 'device_tracker', 'binary_sensor', 'input_boolean']
+                          or (domain in ['binary_sensor', 'input_boolean'] and value != 'off') %}
+                    {% set ns.uncertain = true %}
+                  {% else %}
+                    {% set found = expand(entity) | list %}
+                    {% if found | length != 1 %}
+                      {% set ns.uncertain = true %}
+                    {% elif (now() - found[0].last_changed).total_seconds() < (away_delay | float) * 60 %}
+                      {% set ns.pending = true %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {{ 'home' if ns.home else 'uncertain' if ns.uncertain else
+                   'pending' if ns.pending else 'away' }}
+              {% endif %}
+            pause_blocked: >-
+              {% set ns = namespace(blocked=false) %}
+              {% if enable_pause_switch %}
+                {% if pause_entities | length == 0 %}{% set ns.blocked = true %}{% endif %}
+                {% for entity in pause_entities %}
+                  {% if not is_state(entity, 'off') %}{% set ns.blocked = true %}{% endif %}
+                {% endfor %}
+              {% endif %}
+              {% if enable_manual_override %}
+                {% if manual_override_timer is not string or manual_override_button is not string %}
+                  {% set ns.blocked = true %}
+                {% elif not is_state(manual_override_timer, 'idle') %}
+                  {% set ns.blocked = true %}
+                {% endif %}
+              {% endif %}
+              {{ ns.blocked }}
+            desired_preset: >-
+              {{ vacation_preset if presence_status == 'away' else schedule_info.preset }}
+        - if:
+            - condition: template
+              value_template: >-
+                {{ schedule_info.valid and not pause_blocked
+                   and presence_status in ['home', 'away']
+                   and states(heating_entity) not in ['unknown', 'unavailable', 'off']
+                   and desired_preset in (state_attr(heating_entity, 'preset_modes') or [])
+                   and state_attr(heating_entity, 'preset_mode') != desired_preset }}
+          then:
+            - action: climate.set_preset_mode
+              continue_on_error: true
+              target:
+                entity_id: "{{ heating_entity }}"
+              data:
+                preset_mode: "{{ desired_preset }}"
+            # Send only after the entity confirms the requested preset.
+            - if:
+                - condition: template
+                  value_template: "{{ is_state_attr(heating_entity, 'preset_mode', desired_preset) }}"
+              then:
+                - sequence: !input notification_actions
+                  continue_on_error: true
+        - if:
+            - condition: template
+              value_template: "{{ enable_debug }}"
+          then:
+            - action: system_log.write
+              continue_on_error: true
+              data:
+                level: warning
+                logger: blueprints.smart_heating_schedule
+                message: >-
+                  {{ this.entity_id }}: schedule={{ schedule_info }},
+                  presence={{ presence_status }}, paused={{ pause_blocked }},
+                  desired={{ desired_preset }}

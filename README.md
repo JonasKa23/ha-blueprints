@@ -4,6 +4,23 @@ A collection of Home Assistant automation blueprints.
 
 ## Automations
 
+### Smart Heating Schedule
+
+**File:** `automations/smart_heating_schedule.yaml`
+
+Heizplan für Better Thermostat mit vier oder fünf Slots pro Tagestyp,
+korrektem Vortages-Preset nach Mitternacht, Anwesenheitsprüfung und optionalen
+dauerhaften oder zeitlich begrenzten Pausen. Ein minütlicher Abgleich holt
+Neustarts und wieder verfügbare Thermostate nach.
+
+- [Installation, Verhalten und Preset-Temperaturen](docs/smart_heating_schedule.md)
+- [Sechs Raumvorlagen mit markierten Platzhaltern](examples/heating/)
+- Wöchentliche Upstream-Prüfung mit GitHub-Issue; keine automatische Übernahme
+
+Mindestversion: Home Assistant 2026.9.0.
+
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/JonasKa23/ha-blueprints/blob/main/automations/smart_heating_schedule.yaml)
+
 ### Rollladensteuerung
 
 **File:** `automations/cover_automation.yaml`
