@@ -145,7 +145,6 @@ triggers:
     entity_id: !input window_sensor
     to:
       - "on"
-      - open
     for:
       minutes: !input notification_timeout
     id: window_open_long
@@ -153,7 +152,6 @@ triggers:
     entity_id: !input window_sensor
     to:
       - "off"
-      - closed
     for:
       seconds: 2
     id: window_closed
