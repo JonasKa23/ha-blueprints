@@ -811,7 +811,6 @@ triggers:
     entity_id: !input 'window_sensor'
     to:
       - 'on'
-      - open
     for:
       seconds: 2
     id: window_change
@@ -819,7 +818,6 @@ triggers:
     entity_id: !input 'window_sensor'
     to:
       - 'on'
-      - open
     for:
       minutes: !input 'notification_timeout'
     id: window_open_long
@@ -827,7 +825,6 @@ triggers:
     entity_id: !input 'window_sensor'
     to:
       - 'off'
-      - closed
     for:
       seconds: 2
     id: window_closed
@@ -952,7 +949,7 @@ actions:
                   night_temp_ok: '{{ daily_low is none or daily_low <= night_temp_threshold }}'
                   evening_temp_ok: '{{ daily_low is none or daily_low <= evening_temp_threshold }}'
           - condition: '{{ evening_temp_ok }}'
-          - condition: '{{ states(window_sensor) in [''off'', ''closed''] }}'
+          - condition: '{{ states(window_sensor) in [''off''] }}'
           - condition: '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
           - condition: '{{ state_attr(cover_entity, ''current_position'') | int(-1) > evening_position }}'
           - action: cover.set_cover_position
@@ -980,7 +977,7 @@ actions:
           - condition: '{{ night_temp_ok }}'
           - choose:
               - conditions:
-                  - '{{ states(window_sensor) in [''on'', ''open''] }}'
+                  - '{{ states(window_sensor) in [''on''] }}'
                 sequence:
                   - action: cover.set_cover_position
                     target:
@@ -1015,7 +1012,7 @@ actions:
             then:
               - choose:
                   - conditions:
-                      - '{{ states(window_sensor) in [''on'', ''open''] }}'
+                      - '{{ states(window_sensor) in [''on''] }}'
                     sequence:
                       - action: cover.set_cover_position
                         target:
@@ -1092,7 +1089,7 @@ actions:
                                     and outdoor_temp > shading_temp_threshold - shading_temp_hysteresis)) }}
                       - '{{ weather_ok }}'
                       - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
-                      - '{{ force_shading or states(window_sensor) not in [''on'', ''open''] }}'
+                      - '{{ force_shading or states(window_sensor) not in [''on''] }}'
                     sequence:
                       - variables:
                           ray_height: |-
@@ -1232,11 +1229,11 @@ actions:
           - variables:
               night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
-          - condition: '{{ states(window_sensor) in ["on", "open"] }}'
+          - condition: '{{ states(window_sensor) in ["on"] }}'
           - if:
               - |-
                 {{ trigger.from_state is not none
-                   and (trigger.from_state.state in ['off', 'closed']
+                   and (trigger.from_state.state in ['off']
                         or (trigger.from_state.state in ['unavailable', 'unknown']
                             and expand(reclose_scene) | count == 0)) }}
             then:
@@ -1251,7 +1248,7 @@ actions:
               - *refresh_daily_forecast
           # Auch während der Wetterabfrage kann der Morgenbefehl die Szene verwerfen.
           - condition: '{{ expand(reclose_scene) | count > 0 }}'
-          - condition: '{{ states(window_sensor) in ["on", "open"] }}'
+          - condition: '{{ states(window_sensor) in ["on"] }}'
           - choose:
               - conditions:
                   - '{{ not night_mode_on or not night_temp_ok }}'
@@ -1287,7 +1284,6 @@ actions:
                 entity_id: !input 'window_sensor'
                 to:
                   - 'off'
-                  - closed
                 for:
                   seconds: 2
             timeout:
