@@ -47,7 +47,7 @@ blueprint:
   domain: automation
   author: JonasKa23
   homeassistant:
-    min_version: 2026.9.0
+    min_version: 2026.11.0
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/cover_automation.yaml
   input:
     assignment_section:
@@ -118,6 +118,9 @@ blueprint:
             (ohne Datum) — ein Datum+Uhrzeit-Helfer feuert nur ein einziges Mal an genau diesem
             Datum und danach nie wieder. In allen Blueprint-Instanzen denselben Helfer auswählen.
           default: []
+          visible:
+            field: morning_enabled
+            value: true
           selector:
             entity:
               domain: input_datetime
@@ -128,6 +131,9 @@ blueprint:
             Rollladen geschlossener ist als diese Position. Der Morgenbefehl hebt eine laufende
             Lüftungs-Rückfahrt auch dann auf, wenn die Zielposition bereits erreicht ist.
           default: 100
+          visible:
+            field: morning_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -188,6 +194,9 @@ blueprint:
         Zur Bedeutung von Ausrichtung und Sichtfeld:
         ![Erklärgrafik Sichtfeld](https://raw.githubusercontent.com/JonasKa23/ha-blueprints/main/images/sichtfeld_beschattung.svg)
       icon: mdi:sun-compass
+      visible:
+        field: shading_enabled
+        value: true
       collapsed: true
       input:
         window_azimuth:
@@ -304,6 +313,9 @@ blueprint:
             (Standardverhalten wie bisher — nur Sonnenstand und Temperatur zählen). Ohne gesetzte
             Wetter-Entität wird dieser Filter ignoriert, auch wenn hier Werte ausgewählt sind.
           default: []
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             select:
               multiple: true
@@ -344,6 +356,9 @@ blueprint:
           description: |
             Höhe der Glasfläche in Metern.
           default: 1
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0.3
@@ -356,6 +371,9 @@ blueprint:
           description: |
             Höhe der Fensterunterkante über dem Fußboden in Metern (bei bodentiefen Fenstern 0).
           default: 1
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -370,6 +388,9 @@ blueprint:
             Fensterebene). Kleinere Werte = strengere Beschattung; bei sehr kleinen Werten fährt der
             Rollladen praktisch komplett zu.
           default: 0.4
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -387,6 +408,9 @@ blueprint:
             echter Glasfläche und fährt nie tiefer als diesen Punkt — die Lamellen bleiben offen. 0
             = Motor-Position wird direkt als Glasfläche interpretiert (bisheriges Verhalten).
           default: 15
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -402,6 +426,9 @@ blueprint:
             Aufsetz-Punkt. Muss über dem Aufsetz-Punkt liegen, sonst wird die Kalibrierung
             ignoriert.
           default: 100
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 50
@@ -416,6 +443,9 @@ blueprint:
             Tageslicht bleibt). 0 = ganz schließen erlaubt. Dient bei aktivierter "Beschattung
             erzwingen" außerdem als Mindest-Lüftungsspalt, wenn das Fenster offen ist.
           default: 20
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -428,6 +458,9 @@ blueprint:
           description: |
             Position, auf die nach Ende der Beschattung gefahren wird.
           default: 100
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -441,6 +474,9 @@ blueprint:
             Beschattung beginnt nur, wenn die für heute vorhergesagte Tageshöchsttemperatur
             mindestens diesem Wert entspricht.
           default: 23
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 10
@@ -455,6 +491,9 @@ blueprint:
             temperaturbedingt erst bei oder unter Schwelle minus Hysterese. Ohne gültige Temperatur wird die
             Position gehalten, sofern kein anderer Beendigungsgrund vorliegt.
           default: 2
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 0
@@ -468,6 +507,9 @@ blueprint:
             Der Rollladen wird beim Nachführen nur bewegt, wenn sich die Zielposition um mindestens
             diesen Wert von der aktuellen unterscheidet (schont den Motor).
           default: 8
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 1
@@ -483,6 +525,9 @@ blueprint:
             den Rollladen in Ruhe — bis die Beschattung endet und normal wieder geöffnet wird.
             Kleinere Abweichungen gelten als normales Nachführen der Sonne.
           default: 20
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             number:
               min: 10
@@ -498,6 +543,9 @@ blueprint:
             die "Minimale Beschattungsposition" stehen. ⚠️ Achtung: Für Balkon- und Terrassentüren
             nicht empfohlen — Aussperr-Gefahr!
           default: false
+          visible:
+            field: shading_enabled
+            value: true
           selector:
             boolean: {}
     evening_section:
@@ -544,6 +592,10 @@ blueprint:
             Vorhersage wird der Abendmodus wie gehabt ausgelöst (kein Blockieren durch fehlende
             Daten).
           default: 15
+          visible:
+            field: evening_mode_boolean
+            operator: not_eq
+            value: []
           selector:
             number:
               min: -10
@@ -556,6 +608,10 @@ blueprint:
           description: |
             Position (in %), auf die der Rollladen im Abendmodus fährt.
           default: 20
+          visible:
+            field: evening_mode_boolean
+            operator: not_eq
+            value: []
           selector:
             number:
               min: 0
@@ -595,6 +651,10 @@ blueprint:
             Blockieren durch fehlende Daten). Eine laufende Beschattung wird unabhängig davon immer
             beendet.
           default: 15
+          visible:
+            field: night_mode_boolean
+            operator: not_eq
+            value: []
           selector:
             number:
               min: -10
@@ -608,6 +668,10 @@ blueprint:
             Position (in %), auf die der Rollladen fährt, wenn der Nachtmodus-Helfer eingeschaltet
             wird und das Fenster geschlossen ist.
           default: 0
+          visible:
+            field: night_mode_boolean
+            operator: not_eq
+            value: []
           selector:
             number:
               min: 0
@@ -621,6 +685,10 @@ blueprint:
             Position (in %), auf die nachts (Nachtmodus-Helfer aktiv) gefahren wird, solange das
             Fenster offen ist.
           default: 20
+          visible:
+            field: night_mode_boolean
+            operator: not_eq
+            value: []
           selector:
             number:
               min: 0
@@ -691,6 +759,9 @@ blueprint:
             Als anwesend gilt eine Person mit Status home oder ein eingeschalteter Helfer
             (on). Ausgeschaltete, unbekannte oder nicht verfügbare Helfer gelten nicht als anwesend.
           default: []
+          visible:
+            field: notification_only_when_home
+            value: true
           selector:
             object:
               multiple: true
@@ -1206,7 +1277,6 @@ actions:
       - conditions:
           - condition: trigger
             id: window_closed
-          - "{{ device_name_map | length > 0 }}"
         sequence:
           - repeat:
               for_each: "{{ device_name_map }}"
@@ -1217,6 +1287,27 @@ actions:
                     message: clear_notification
                     data:
                       tag: "{{ notification_tag }}"
+          # Nach dem Timeout wartet kein Lüftungslauf mehr auf das Schließen.
+          # Eine vorhandene Szene zeigt, dass kein Morgenbefehl übernommen hat.
+          - condition: "{{ trigger.from_state is not none and trigger.from_state.state == 'on' }}"
+          - variables:
+              reclose_scene: scene.reclose_{{ cover_entity | slugify }}
+          - condition: "{{ expand(reclose_scene) | count > 0 }}"
+          - condition: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
+          - condition: "{{ not pause_active }}"
+          - *refresh_daily_forecast
+          # Während der Vorhersage können Morgenbefehl, Pause oder Fenster übernehmen.
+          - variables:
+              pause_now: *pause_active_template
+          - condition: "{{ expand(reclose_scene) | count > 0 }}"
+          - condition: "{{ is_state(window_sensor, 'off') }}"
+          - condition: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
+          - condition: "{{ not pause_now and night_temp_ok }}"
+          - action: cover.set_cover_position
+            target:
+              entity_id: !input "cover"
+            data:
+              position: !input "night_closed_position"
       - conditions:
           - condition: trigger
             id: close_shutter_action

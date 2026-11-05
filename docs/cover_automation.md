@@ -4,6 +4,17 @@ Diese Anpassung basiert auf der Rollladensteuerung V2 von TheRealSimon42.
 Pro Rollladen wird eine Automation mit einem binären Fensterkontakt erstellt.
 0 % bedeutet geschlossen, 100 % vollständig geöffnet.
 
+Voraussetzung: Home Assistant **2026.11.0** oder neuer.
+
+Das Formular blendet Morgeneinstellungen und Beschattungsdetails einschließlich
+Fenstergeometrie nur bei aktivierter Funktion ein. Abend- und Nachtpositionen sowie
+Temperaturschwellen erscheinen nach Auswahl des jeweiligen Helfers; die
+Anwesenheitszuordnung erscheint bei aktivierter Anwesenheitsprüfung.
+Wetterquelle, globale Sonnenschutz-Freigabe und Beschattungsstatus-Helfer bleiben
+sichtbar, weil sie auch außerhalb der Beschattungsfahrten verwendet werden.
+Ausgeblendete Eingaben werden von Home Assistant mit ihrem Standardwert ausgewertet.
+Bestehende Eingabeschlüssel bleiben unverändert.
+
 ## Einrichtung und Umstellung
 
 - Rollladen und binären Fensterkontakt auswählen.
@@ -98,6 +109,15 @@ Auch bei Fenster-Interaktion und nach dem Rückfahr-Warten wird die Nacht-Temper
 angewendet. Ist es zu warm, gilt beim Öffnen die Tages-Lüftungsposition und beim Schließen
 wird die vorherige Position wiederhergestellt. Eine Pause verhindert das Zurückfahren.
 Der Nachtmodus-Helfer blockiert den Sonnenschutz unabhängig von der Temperatur.
+
+Bleibt das Fenster länger als das Rückfahr-Zeitfenster offen, holt das spätere
+Schließen die Nachtposition trotzdem nach. Das funktioniert auch ohne
+Benachrichtigungsgeräte. Erforderlich sind ein echter Wechsel von offen zu geschlossen,
+ein aktiver Nachtmodus, eine passende Temperatur und keine Pause. Die Rückfahr-Szene
+muss noch existieren: Ein zwischenzeitlicher Morgenbefehl hebt auch diese Nachtfahrt
+auf. Nach einem Home-Assistant-Neustart fehlen dynamische Szenen; für den alten
+Lüftungsvorgang wird dann keine Nachtfahrt nachgeholt.
+Nach der Wetterabfrage werden Fensterzustand, Nachtmodus, Pause und Szene erneut geprüft.
 
 ## Morgens öffnen während des Lüftens
 
