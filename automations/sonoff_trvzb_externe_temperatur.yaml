@@ -1,0 +1,70 @@
+blueprint:
+  name: Sonoff TRVZB – externe Raumtemperatur übertragen
+  description: >
+    Überträgt den Wert eines Raumtemperatursensors in °C an ein Sonoff TRVZB
+    über ZHA. Sendet bei Änderungen, beim Start von Home Assistant und alle
+    30 Minuten erneut. Aktiviert den externen Sensormodus bei Bedarf.
+    Die drei Entitäten werden ausdrücklich gewählt, damit auch übersetzte
+    Entitäts-IDs funktionieren.
+  domain: automation
+  author: JonasKa23
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    room_temperature:
+      name: Raumtemperatursensor
+      selector:
+        entity:
+          filter:
+            domain: sensor
+            device_class: temperature
+    external_temperature_value:
+      name: Sonoff – Wert des externen Temperatursensors
+      selector:
+        entity:
+          filter:
+            domain: number
+            integration: zha
+    external_sensor_switch:
+      name: Sonoff – externer Temperatursensor
+      selector:
+        entity:
+          filter:
+            domain: switch
+            integration: zha
+
+variables:
+  room_temperature: !input room_temperature
+
+triggers:
+  - trigger: state
+    entity_id: !input room_temperature
+  - trigger: time_pattern
+    minutes: "/30"
+  - trigger: homeassistant
+    event: start
+
+conditions:
+  - condition: numeric_state
+    entity_id: !input room_temperature
+    above: 0
+    below: 50
+  - condition: template
+    value_template: "{{ state_attr(room_temperature, 'unit_of_measurement') == '°C' }}"
+
+actions:
+  - action: number.set_value
+    target:
+      entity_id: !input external_temperature_value
+    data:
+      value: "{{ states(room_temperature) | float | round(1) }}"
+  - if:
+      - condition: state
+        entity_id: !input external_sensor_switch
+        state: "off"
+    then:
+      - action: switch.turn_on
+        target:
+          entity_id: !input external_sensor_switch
+
+mode: restart
