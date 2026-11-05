@@ -5,7 +5,7 @@ blueprint:
   domain: automation
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/heizdecke_ha_start.yaml
   homeassistant:
-    min_version: '2024.10.0'
+    min_version: "2024.10.0"
   input:
     steckdose:
       name: Heizdecken-Steckdose
@@ -19,7 +19,12 @@ blueprint:
       description: Maximale Wartezeit nach HA-Start in Sekunden.
       default: 120
       selector:
-        number: {min: 10, max: 600, step: 1, unit_of_measurement: s, mode: box}
+        number:
+          min: 10
+          max: 600
+          step: 1
+          unit_of_measurement: s
+          mode: box
     benachrichtigung:
       name: Zusätzliche Benachrichtigungsaktion (optional)
       description: "notify-Aktion mit message: '{{ meldung }}'; HA-Meldung erfolgt immer."
@@ -38,12 +43,12 @@ actions:
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: ['on', 'off']
+            state: ["on", "off"]
     then:
       - wait_for_trigger:
           - trigger: state
             entity_id: !input steckdose
-            to: ['on', 'off']
+            to: ["on", "off"]
         timeout:
           seconds: !input timeout_s
         continue_on_timeout: true
@@ -52,7 +57,7 @@ actions:
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: ['on', 'off']
+            state: ["on", "off"]
     then:
       - variables:
           meldung: >-
@@ -61,7 +66,7 @@ actions:
       - action: persistent_notification.create
         data:
           title: Heizdecke – HA-Start
-          message: '{{ meldung }}'
+          message: "{{ meldung }}"
         continue_on_error: true
       - sequence: !input benachrichtigung
       - stop: Steckdose nach Timeout nicht erreichbar.
@@ -74,20 +79,20 @@ actions:
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: 'off'
+            state: "off"
     then:
       - wait_for_trigger:
           - trigger: state
             entity_id: !input steckdose
-            to: 'off'
-        timeout: '00:00:10'
+            to: "off"
+        timeout: "00:00:10"
         continue_on_timeout: true
   - if:
       - condition: not
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: 'off'
+            state: "off"
     then:
       - variables:
           meldung: >-
@@ -96,6 +101,6 @@ actions:
       - action: persistent_notification.create
         data:
           title: Heizdecke – HA-Start
-          message: '{{ meldung }}'
+          message: "{{ meldung }}"
         continue_on_error: true
       - sequence: !input benachrichtigung

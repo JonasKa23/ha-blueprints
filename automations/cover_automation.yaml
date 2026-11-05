@@ -134,7 +134,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
     window_interaction_section:
       name: Fenster-Interaktion
       description: |
@@ -156,7 +156,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         reclose_timeout:
           name: Zeitfenster für automatisches Zurückfahren
           description: |
@@ -393,7 +393,7 @@ blueprint:
               max: 50
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         glass_top_position:
           name: Oberer Glas-Endpunkt (Glas-Kalibrierung)
           description: |
@@ -408,7 +408,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         shading_min_position:
           name: Minimale Beschattungsposition
           description: |
@@ -422,7 +422,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         shading_end_position:
           name: Position nach der Beschattung
           description: |
@@ -434,7 +434,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         shading_temp_threshold:
           name: Temperatur-Schwelle
           description: |
@@ -450,7 +450,8 @@ blueprint:
               unit_of_measurement: °C
         shading_temp_hysteresis:
           name: Temperatur-Hysterese
-          description: Eine aktive Beschattung führt innerhalb der Hysterese weiter nach. Sie endet
+          description:
+            Eine aktive Beschattung führt innerhalb der Hysterese weiter nach. Sie endet
             temperaturbedingt erst bei oder unter Schwelle minus Hysterese. Ohne gültige Temperatur wird die
             Position gehalten, sofern kein anderer Beendigungsgrund vorliegt.
           default: 2
@@ -473,7 +474,7 @@ blueprint:
               max: 25
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         shading_override_threshold:
           name: Toleranz für manuelle Eingriffe
           description: |
@@ -488,7 +489,7 @@ blueprint:
               max: 60
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         force_shading:
           name: Beschattung erzwingen
           description: |
@@ -561,7 +562,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
     night_section:
       name: Nachtmodus
       description: |
@@ -613,7 +614,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
         night_ventilation_position:
           name: Nachtposition bei offenem Fenster
           description: |
@@ -626,7 +627,7 @@ blueprint:
               max: 100
               step: 1
               mode: slider
-              unit_of_measurement: '%'
+              unit_of_measurement: "%"
     pause_section:
       name: Pausieren
       description: |
@@ -740,51 +741,51 @@ blueprint:
 mode: parallel
 max: 20
 variables:
-  cover_entity: !input 'cover'
-  window_sensor: !input 'window_sensor'
-  window_open_position: !input 'window_open_position'
-  reclose_timeout: !input 'reclose_timeout'
-  force_close: !input 'force_close'
-  morning_position: !input 'morning_position'
-  evening_temp_threshold: !input 'evening_temp_threshold'
-  evening_position: !input 'evening_position'
-  night_mode_boolean: !input 'night_mode_boolean'
-  night_temp_threshold: !input 'night_temp_threshold'
-  night_closed_position: !input 'night_closed_position'
-  night_ventilation_position: !input 'night_ventilation_position'
-  weather_entity: !input 'weather_entity'
-  shading_status_helper: !input 'shading_status_helper'
-  shading_control_helper: !input 'shading_control_helper'
-  window_azimuth: !input 'window_azimuth'
-  shading_fov_left: !input 'shading_fov_left'
-  shading_fov_right: !input 'shading_fov_right'
-  shading_min_elevation: !input 'shading_min_elevation'
-  window_height: !input 'window_height'
-  window_sill_height: !input 'window_sill_height'
-  shading_depth: !input 'shading_depth'
-  glass_bottom_position: !input 'glass_bottom_position'
-  glass_top_position: !input 'glass_top_position'
-  shading_min_position: !input 'shading_min_position'
-  shading_end_position: !input 'shading_end_position'
-  shading_temp_threshold: !input 'shading_temp_threshold'
-  shading_temp_hysteresis: !input 'shading_temp_hysteresis'
-  shading_min_change: !input 'shading_min_change'
-  shading_override_threshold: !input 'shading_override_threshold'
-  force_shading: !input 'force_shading'
-  shading_weather_states: !input 'shading_weather_states'
-  pause_boolean: !input 'pause_boolean'
+  cover_entity: !input "cover"
+  window_sensor: !input "window_sensor"
+  window_open_position: !input "window_open_position"
+  reclose_timeout: !input "reclose_timeout"
+  force_close: !input "force_close"
+  morning_position: !input "morning_position"
+  evening_temp_threshold: !input "evening_temp_threshold"
+  evening_position: !input "evening_position"
+  night_mode_boolean: !input "night_mode_boolean"
+  night_temp_threshold: !input "night_temp_threshold"
+  night_closed_position: !input "night_closed_position"
+  night_ventilation_position: !input "night_ventilation_position"
+  weather_entity: !input "weather_entity"
+  shading_status_helper: !input "shading_status_helper"
+  shading_control_helper: !input "shading_control_helper"
+  window_azimuth: !input "window_azimuth"
+  shading_fov_left: !input "shading_fov_left"
+  shading_fov_right: !input "shading_fov_right"
+  shading_min_elevation: !input "shading_min_elevation"
+  window_height: !input "window_height"
+  window_sill_height: !input "window_sill_height"
+  shading_depth: !input "shading_depth"
+  glass_bottom_position: !input "glass_bottom_position"
+  glass_top_position: !input "glass_top_position"
+  shading_min_position: !input "shading_min_position"
+  shading_end_position: !input "shading_end_position"
+  shading_temp_threshold: !input "shading_temp_threshold"
+  shading_temp_hysteresis: !input "shading_temp_hysteresis"
+  shading_min_change: !input "shading_min_change"
+  shading_override_threshold: !input "shading_override_threshold"
+  force_shading: !input "force_shading"
+  shading_weather_states: !input "shading_weather_states"
+  pause_boolean: !input "pause_boolean"
   pause_active: &pause_active_template |-
     {% set helpers = [pause_boolean] if pause_boolean is string else pause_boolean %} {% set found = expand(helpers) | list %} {{ helpers | length > 0
        and found | length > 0
        and found | rejectattr('state', 'eq', 'on') | list | length == 0 }}
-  sleep_mode_boolean: !input 'sleep_mode_boolean'
-  use_area_name: !input 'use_area_name'
-  notification_timeout: !input 'notification_timeout'
-  notification_device: !input 'notification_device'
-  notification_only_when_home: !input 'notification_only_when_home'
+  sleep_mode_boolean: !input "sleep_mode_boolean"
+  use_area_name: !input "use_area_name"
+  notification_timeout: !input "notification_timeout"
+  notification_device: !input "notification_device"
+  notification_only_when_home: !input "notification_only_when_home"
   notification_device_persons: !input notification_device_persons
-  action_id: '{{ ''CLOSE_SHUTTER__'' ~ window_sensor }}'
-  notification_tag: '{{ ''fenster_offen_'' ~ (window_sensor | slugify) }}'
+  action_id: "{{ 'CLOSE_SHUTTER__' ~ window_sensor }}"
+  notification_tag: "{{ 'fenster_offen_' ~ (window_sensor | slugify) }}"
   device_name_map: |
     {% set ns = namespace(device_names=[]) %} {% for device_id in notification_device %}
       {% set device_name = device_attr(device_id, "name") %}
@@ -793,7 +794,7 @@ variables:
           service="mobile_app_" + device_name | slugify)] %}
       {% endif %}
     {% endfor %} {{ ns.device_names }}
-  shading_enabled: !input 'shading_enabled'
+  shading_enabled: !input "shading_enabled"
   daily_forecast: {}
   today_forecast: {}
   daily_high:
@@ -801,46 +802,46 @@ variables:
   night_temp_ok: true
   evening_temp_ok: true
 trigger_variables:
-  window_sensor_tv: !input 'window_sensor'
+  window_sensor_tv: !input "window_sensor"
 triggers:
   - trigger: time
-    at: !input 'morning_time'
+    at: !input "morning_time"
     id: morning_open
-    enabled: !input 'morning_enabled'
+    enabled: !input "morning_enabled"
   - trigger: state
-    entity_id: !input 'window_sensor'
+    entity_id: !input "window_sensor"
     to:
-      - 'on'
+      - "on"
     for:
       seconds: 2
     id: window_change
   - trigger: state
-    entity_id: !input 'window_sensor'
+    entity_id: !input "window_sensor"
     to:
-      - 'on'
+      - "on"
     for:
-      minutes: !input 'notification_timeout'
+      minutes: !input "notification_timeout"
     id: window_open_long
   - trigger: state
-    entity_id: !input 'window_sensor'
+    entity_id: !input "window_sensor"
     to:
-      - 'off'
+      - "off"
     for:
       seconds: 2
     id: window_closed
   - trigger: state
-    entity_id: !input 'pause_boolean'
-    from: 'on'
-    to: 'off'
+    entity_id: !input "pause_boolean"
+    from: "on"
+    to: "off"
     id: pause_ended
   - trigger: state
-    entity_id: !input 'night_mode_boolean'
-    to: 'on'
+    entity_id: !input "night_mode_boolean"
+    to: "on"
     id: night_close
   - trigger: state
-    entity_id: !input 'evening_mode_boolean'
-    from: 'off'
-    to: 'on'
+    entity_id: !input "evening_mode_boolean"
+    from: "off"
+    to: "on"
     id: evening_close
   - trigger: event
     event_type: mobile_app_notification_action
@@ -850,16 +851,16 @@ triggers:
   - trigger: time_pattern
     minutes: /5
     id: solar_tick
-    enabled: !input 'shading_enabled'
+    enabled: !input "shading_enabled"
   - trigger: state
-    entity_id: !input 'shading_control_helper'
-    to: 'on'
+    entity_id: !input "shading_control_helper"
+    to: "on"
     id: solar_tick
-    enabled: !input 'shading_enabled'
+    enabled: !input "shading_enabled"
   - trigger: state
-    entity_id: !input 'shading_control_helper'
+    entity_id: !input "shading_control_helper"
     to:
-      - 'off'
+      - "off"
       - unknown
       - unavailable
     id: shading_disabled
@@ -871,15 +872,15 @@ actions:
       - conditions:
           - condition: trigger
             id: shading_disabled
-          - '{{ shading_control_helper is string and not is_state(shading_control_helper, ''on'') }}'
+          - "{{ shading_control_helper is string and not is_state(shading_control_helper, 'on') }}"
         sequence:
           - &clear_shading_status
             if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+              - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: '{{ shading_status_helper }}'
+                  entity_id: "{{ shading_status_helper }}"
       - conditions:
           - condition: trigger
             id: morning_open
@@ -887,33 +888,33 @@ actions:
           - variables:
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
           - if:
-              - '{{ expand(reclose_scene) | count > 0 }}'
+              - "{{ expand(reclose_scene) | count > 0 }}"
             then:
               - action: scene.delete
                 target:
-                  entity_id: '{{ reclose_scene }}'
+                  entity_id: "{{ reclose_scene }}"
           - choose:
               - conditions:
-                  - '{{ state_attr(cover_entity, ''current_position'') is not none }}'
-                  - '{{ state_attr(cover_entity, ''current_position'') | int(101) < morning_position }}'
+                  - "{{ state_attr(cover_entity, 'current_position') is not none }}"
+                  - "{{ state_attr(cover_entity, 'current_position') | int(101) < morning_position }}"
                 sequence:
                   - action: cover.set_cover_position
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
                     data:
-                      position: !input 'morning_position'
+                      position: !input "morning_position"
               - conditions:
-                  - '{{ state_attr(cover_entity, ''current_position'') is none }}'
+                  - "{{ state_attr(cover_entity, 'current_position') is none }}"
                 sequence:
                   - action: cover.open_cover
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
           - if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+              - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: '{{ shading_status_helper }}'
+                  entity_id: "{{ shading_status_helper }}"
       - conditions:
           - condition: trigger
             id: evening_close
@@ -924,11 +925,11 @@ actions:
               - variables:
                   daily_forecast: {}
               - if:
-                  - '{{ weather_entity is string }}'
+                  - "{{ weather_entity is string }}"
                 then:
                   - action: weather.get_forecasts
                     target:
-                      entity_id: '{{ weather_entity }}'
+                      entity_id: "{{ weather_entity }}"
                     data:
                       type: daily
                     response_variable: daily_forecast
@@ -944,52 +945,52 @@ actions:
                       {% endif %}
                     {% endfor %}
                     {{ result.entry }}
-                  daily_low: '{{ today_forecast.get(''templow'') | float(none) }}'
-                  daily_high: '{{ today_forecast.get(''temperature'') | float(none) }}'
-                  night_temp_ok: '{{ daily_low is none or daily_low <= night_temp_threshold }}'
-                  evening_temp_ok: '{{ daily_low is none or daily_low <= evening_temp_threshold }}'
-          - condition: '{{ evening_temp_ok }}'
-          - condition: '{{ states(window_sensor) in [''off''] }}'
-          - condition: '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
-          - condition: '{{ state_attr(cover_entity, ''current_position'') | int(-1) > evening_position }}'
+                  daily_low: "{{ today_forecast.get('templow') | float(none) }}"
+                  daily_high: "{{ today_forecast.get('temperature') | float(none) }}"
+                  night_temp_ok: "{{ daily_low is none or daily_low <= night_temp_threshold }}"
+                  evening_temp_ok: "{{ daily_low is none or daily_low <= evening_temp_threshold }}"
+          - condition: "{{ evening_temp_ok }}"
+          - condition: "{{ states(window_sensor) in ['off'] }}"
+          - condition: "{{ not (night_mode_boolean is string and is_state(night_mode_boolean, 'on')) }}"
+          - condition: "{{ state_attr(cover_entity, 'current_position') | int(-1) > evening_position }}"
           - action: cover.set_cover_position
             target:
-              entity_id: !input 'cover'
+              entity_id: !input "cover"
             data:
-              position: !input 'evening_position'
+              position: !input "evening_position"
           - if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+              - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: '{{ shading_status_helper }}'
+                  entity_id: "{{ shading_status_helper }}"
       - conditions:
           - condition: trigger
             id: night_close
         sequence:
           - if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+              - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: '{{ shading_status_helper }}'
+                  entity_id: "{{ shading_status_helper }}"
           - *refresh_daily_forecast
-          - condition: '{{ night_temp_ok }}'
+          - condition: "{{ night_temp_ok }}"
           - choose:
               - conditions:
-                  - '{{ states(window_sensor) in [''on''] }}'
+                  - "{{ states(window_sensor) in ['on'] }}"
                 sequence:
                   - action: cover.set_cover_position
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
                     data:
-                      position: !input 'night_ventilation_position'
+                      position: !input "night_ventilation_position"
             default:
               - action: cover.set_cover_position
                 target:
-                  entity_id: !input 'cover'
+                  entity_id: !input "cover"
                 data:
-                  position: !input 'night_closed_position'
+                  position: !input "night_closed_position"
       - conditions:
           - condition: trigger
             id: pause_ended
@@ -1000,37 +1001,37 @@ actions:
             {% endfor %} {{ ns.all }}
         sequence:
           - if:
-              - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+              - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: '{{ shading_status_helper }}'
+                  entity_id: "{{ shading_status_helper }}"
           - *refresh_daily_forecast
           - if:
-              - '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
-              - '{{ night_temp_ok }}'
+              - "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
+              - "{{ night_temp_ok }}"
             then:
               - choose:
                   - conditions:
-                      - '{{ states(window_sensor) in [''on''] }}'
+                      - "{{ states(window_sensor) in ['on'] }}"
                     sequence:
                       - action: cover.set_cover_position
                         target:
-                          entity_id: !input 'cover'
+                          entity_id: !input "cover"
                         data:
-                          position: !input 'night_ventilation_position'
+                          position: !input "night_ventilation_position"
                 default:
                   - action: cover.set_cover_position
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
                     data:
-                      position: !input 'night_closed_position'
+                      position: !input "night_closed_position"
       - conditions:
           - condition: trigger
             id: solar_tick
         sequence:
           - if:
-              - '{{ shading_control_helper is string and not is_state(shading_control_helper, ''on'') }}'
+              - "{{ shading_control_helper is string and not is_state(shading_control_helper, 'on') }}"
             then:
               - *clear_shading_status
           - &require_shading_permission
@@ -1038,37 +1039,38 @@ actions:
               {{ shading_enabled and (shading_control_helper is not string
                  or is_state(shading_control_helper, 'on')) }}
           - variables:
-              sun_elevation: '{{ state_attr(''sun.sun'', ''elevation'') | float(0) }}'
-              sun_azimuth: '{{ state_attr(''sun.sun'', ''azimuth'') | float(0) }}'
-              az_diff: '{{ ((sun_azimuth - window_azimuth + 180) % 360) - 180 }}'
+              sun_elevation: "{{ state_attr('sun.sun', 'elevation') | float(0) }}"
+              sun_azimuth: "{{ state_attr('sun.sun', 'azimuth') | float(0) }}"
+              az_diff: "{{ ((sun_azimuth - window_azimuth + 180) % 360) - 180 }}"
               sun_in_window: |-
                 {{ sun_elevation >= shading_min_elevation
                    and az_diff >= (0 - shading_fov_left)
                    and az_diff <= shading_fov_right }}
           - if:
-              - '{{ sun_in_window }}'
+              - "{{ sun_in_window }}"
             then:
               - *refresh_daily_forecast
           # Die Wetterabfrage kann warten: Freigabe danach erneut live prüfen.
           - *require_shading_permission
           - if:
-              - '{{ shading_enabled }}'
+              - "{{ shading_enabled }}"
             then:
               - if:
-                  - '{{ shading_status_helper is not string }}'
+                  - "{{ shading_status_helper is not string }}"
                 then:
                   - action: persistent_notification.create
                     data:
                       notification_id: rollladen_helfer_fehlt_{{ cover_entity | slugify }}
-                      title: 'Rollladensteuerung: Status-Helfer fehlt'
-                      message: Der Sonnenschutz für "{{ state_attr(cover_entity, 'friendly_name') or
+                      title: "Rollladensteuerung: Status-Helfer fehlt"
+                      message:
+                        Der Sonnenschutz für "{{ state_attr(cover_entity, 'friendly_name') or
                         cover_entity }}" ist aktiviert, aber es ist kein Status-Helfer (input_boolean)
                         ausgewählt — die Beschattung bleibt dadurch wirkungslos. Bitte in der Automation einen
                         Helfer auswählen oder den Sonnenschutz deaktivieren.
-              - condition: '{{ shading_status_helper is string }}'
+              - condition: "{{ shading_status_helper is string }}"
               - variables:
-                  outdoor_temp: '{{ daily_high | float(-99) }}'
-                  temp_available: '{{ daily_high is not none }}'
+                  outdoor_temp: "{{ daily_high | float(-99) }}"
+                  temp_available: "{{ daily_high is not none }}"
                   weather_ok: |-
                     {{ shading_weather_states | length == 0
                        or not (weather_entity is string)
@@ -1087,74 +1089,75 @@ actions:
                            and (outdoor_temp >= shading_temp_threshold
                                 or (is_state(shading_status_helper, 'on')
                                     and outdoor_temp > shading_temp_threshold - shading_temp_hysteresis)) }}
-                      - '{{ weather_ok }}'
-                      - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
-                      - '{{ force_shading or states(window_sensor) not in [''on''] }}'
+                      - "{{ weather_ok }}"
+                      - "{{ not (night_mode_boolean is string and is_state(night_mode_boolean, 'on')) }}"
+                      - "{{ force_shading or states(window_sensor) not in ['on'] }}"
                     sequence:
                       - variables:
                           ray_height: |-
                             {{ shading_depth * tan(sun_elevation * pi / 180)
                                / ([cos(az_diff * pi / 180), 0.087] | max) }}
-                          target_position: '{% set glass_free = [[(ray_height - window_sill_height) / window_height
+                          target_position:
+                            "{% set glass_free = [[(ray_height - window_sill_height) / window_height
                             * 100, 0] | max, 100] | min %} {% set a = glass_bottom_position | int(0) %} {% set b
                             = glass_top_position | int(100) %} {% if b <= a %}{% set a = 0 %}{% set b = 100 %}{%
                             endif %} {% set p = (a + glass_free * (b - a) / 100) | round(0) | int %} {{ [p, shading_min_position
-                            | int] | max }}'
-                          current_position: '{{ state_attr(cover_entity, ''current_position'') | int(-1) }}'
-                      - condition: '{{ current_position >= 0 }}'
+                            | int] | max }}"
+                          current_position: "{{ state_attr(cover_entity, 'current_position') | int(-1) }}"
+                      - condition: "{{ current_position >= 0 }}"
                       - variables:
-                          deviation: '{{ (current_position - target_position | int) | abs }}'
+                          deviation: "{{ (current_position - target_position | int) | abs }}"
                       - if:
-                          - '{{ is_state(shading_status_helper, ''on'') }}'
+                          - "{{ is_state(shading_status_helper, 'on') }}"
                         then:
                           - if:
-                              - '{{ deviation >= shading_min_change and deviation <= shading_override_threshold
-                                }}'
+                              - "{{ deviation >= shading_min_change and deviation <= shading_override_threshold
+                                }}"
                             then:
                               - *require_shading_permission
                               - action: cover.set_cover_position
                                 target:
-                                  entity_id: !input 'cover'
+                                  entity_id: !input "cover"
                                 data:
-                                  position: '{{ target_position }}'
+                                  position: "{{ target_position }}"
                         else:
                           - action: input_boolean.turn_on
                             target:
-                              entity_id: '{{ shading_status_helper }}'
+                              entity_id: "{{ shading_status_helper }}"
                           - if:
-                              - '{{ deviation >= shading_min_change }}'
+                              - "{{ deviation >= shading_min_change }}"
                             then:
                               - *require_shading_permission
                               - action: cover.set_cover_position
                                 target:
-                                  entity_id: !input 'cover'
+                                  entity_id: !input "cover"
                                 data:
-                                  position: '{{ target_position }}'
+                                  position: "{{ target_position }}"
                   - conditions:
-                      - '{{ is_state(shading_status_helper, ''on'') }}'
+                      - "{{ is_state(shading_status_helper, 'on') }}"
                       - |-
                         {{ (not sun_in_window)
                            or (temp_available and outdoor_temp <= (shading_temp_threshold - shading_temp_hysteresis))
                            or weather_bad_stable }}
-                      - '{{ not (night_mode_boolean is string and is_state(night_mode_boolean, ''on'')) }}'
+                      - "{{ not (night_mode_boolean is string and is_state(night_mode_boolean, 'on')) }}"
                     sequence:
                       - action: input_boolean.turn_off
                         target:
-                          entity_id: '{{ shading_status_helper }}'
+                          entity_id: "{{ shading_status_helper }}"
                       - *require_shading_permission
                       - action: cover.set_cover_position
                         target:
-                          entity_id: !input 'cover'
+                          entity_id: !input "cover"
                         data:
-                          position: !input 'shading_end_position'
+                          position: !input "shading_end_position"
       - conditions:
           - condition: trigger
             id: window_open_long
-          - '{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, ''on'')) }}'
-          - '{{ device_name_map | length > 0 }}'
+          - "{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, 'on')) }}"
+          - "{{ device_name_map | length > 0 }}"
         sequence:
           - variables:
-              has_area: '{{ use_area_name and area_name(window_sensor) is not none }}'
+              has_area: "{{ use_area_name and area_name(window_sensor) is not none }}"
               window_label: |-
                 {%- if has_area -%}
                   {{ area_name(window_sensor) }}
@@ -1174,7 +1177,7 @@ actions:
                   Fenster '{{ window_label }}' ist seit über {{ notification_timeout }} Minuten offen.
                 {%- endif -%}
           - repeat:
-              for_each: '{{ device_name_map }}'
+              for_each: "{{ device_name_map }}"
               sequence:
                 - condition: template
                   value_template: >-
@@ -1193,41 +1196,41 @@ actions:
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
-                    title: '{{ title_text }}'
-                    message: '{{ message_text }}'
+                    title: "{{ title_text }}"
+                    message: "{{ message_text }}"
                     data:
-                      tag: '{{ notification_tag }}'
+                      tag: "{{ notification_tag }}"
                       actions:
-                        - action: '{{ action_id }}'
+                        - action: "{{ action_id }}"
                           title: Rollladen schließen
       - conditions:
           - condition: trigger
             id: window_closed
-          - '{{ device_name_map | length > 0 }}'
+          - "{{ device_name_map | length > 0 }}"
         sequence:
           - repeat:
-              for_each: '{{ device_name_map }}'
+              for_each: "{{ device_name_map }}"
               sequence:
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
                     message: clear_notification
                     data:
-                      tag: '{{ notification_tag }}'
+                      tag: "{{ notification_tag }}"
       - conditions:
           - condition: trigger
             id: close_shutter_action
-          - '{{ trigger.event.data.action == action_id }}'
+          - "{{ trigger.event.data.action == action_id }}"
         sequence:
           - action: cover.close_cover
             target:
-              entity_id: !input 'cover'
+              entity_id: !input "cover"
       - conditions:
           - condition: trigger
             id: window_change
         sequence:
           - variables:
-              night_mode_on: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
+              night_mode_on: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
               reclose_scene: scene.reclose_{{ cover_entity | slugify }}
           - condition: '{{ states(window_sensor) in ["on"] }}'
           - if:
@@ -1239,20 +1242,20 @@ actions:
             then:
               - action: scene.create
                 data:
-                  scene_id: '{{ ''reclose_'' ~ (cover_entity | slugify) }}'
+                  scene_id: "{{ 'reclose_' ~ (cover_entity | slugify) }}"
                   snapshot_entities:
-                    - '{{ cover_entity }}'
+                    - "{{ cover_entity }}"
           - if:
-              - '{{ night_mode_on }}'
+              - "{{ night_mode_on }}"
             then:
               - *refresh_daily_forecast
           # Auch während der Wetterabfrage kann der Morgenbefehl die Szene verwerfen.
-          - condition: '{{ expand(reclose_scene) | count > 0 }}'
+          - condition: "{{ expand(reclose_scene) | count > 0 }}"
           - condition: '{{ states(window_sensor) in ["on"] }}'
           - choose:
               - conditions:
-                  - '{{ not night_mode_on or not night_temp_ok }}'
-                  - '{{ state_attr(cover_entity, ''current_position'') | int(101) < window_open_position }}'
+                  - "{{ not night_mode_on or not night_temp_ok }}"
+                  - "{{ state_attr(cover_entity, 'current_position') | int(101) < window_open_position }}"
                   - >-
                     {{ not (force_shading and shading_enabled
                        and (shading_control_helper is not string or is_state(shading_control_helper, 'on'))
@@ -1260,73 +1263,73 @@ actions:
                 sequence:
                   - action: cover.set_cover_position
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
                     data:
-                      position: !input 'window_open_position'
+                      position: !input "window_open_position"
                   - if:
-                      - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+                      - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
                     then:
                       - action: input_boolean.turn_off
                         target:
-                          entity_id: '{{ shading_status_helper }}'
+                          entity_id: "{{ shading_status_helper }}"
               - conditions:
-                  - '{{ night_mode_on }}'
-                  - '{{ state_attr(cover_entity, ''current_position'') | int(101) < night_ventilation_position }}'
-                  - '{{ night_temp_ok }}'
+                  - "{{ night_mode_on }}"
+                  - "{{ state_attr(cover_entity, 'current_position') | int(101) < night_ventilation_position }}"
+                  - "{{ night_temp_ok }}"
                 sequence:
                   - action: cover.set_cover_position
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
                     data:
-                      position: !input 'night_ventilation_position'
+                      position: !input "night_ventilation_position"
           - wait_for_trigger:
               - trigger: state
-                entity_id: !input 'window_sensor'
+                entity_id: !input "window_sensor"
                 to:
-                  - 'off'
+                  - "off"
                 for:
                   seconds: 2
             timeout:
-              minutes: !input 'reclose_timeout'
+              minutes: !input "reclose_timeout"
             continue_on_timeout: true
           - *refresh_daily_forecast
           # Ohne Rückfahr-Szene darf dieser Lüftungsvorgang keinen Schließbefehl mehr senden.
-          - condition: '{{ expand(reclose_scene) | count > 0 }}'
+          - condition: "{{ expand(reclose_scene) | count > 0 }}"
           - variables:
-              night_mode_on_now: '{{ night_mode_boolean is string and is_state(night_mode_boolean, ''on'') }}'
+              night_mode_on_now: "{{ night_mode_boolean is string and is_state(night_mode_boolean, 'on') }}"
               pause_now: *pause_active_template
           - if:
-              - '{{ wait.trigger is none }}'
+              - "{{ wait.trigger is none }}"
             then:
               - if:
-                  - '{{ force_close }}'
-                  - '{{ not pause_now }}'
+                  - "{{ force_close }}"
+                  - "{{ not pause_now }}"
                 then:
                   - action: cover.close_cover
                     target:
-                      entity_id: !input 'cover'
+                      entity_id: !input "cover"
             else:
               - choose:
                   - conditions:
-                      - '{{ night_mode_on_now }}'
-                      - '{{ not pause_now }}'
-                      - '{{ night_temp_ok }}'
+                      - "{{ night_mode_on_now }}"
+                      - "{{ not pause_now }}"
+                      - "{{ night_temp_ok }}"
                     sequence:
                       - action: cover.set_cover_position
                         target:
-                          entity_id: !input 'cover'
+                          entity_id: !input "cover"
                         data:
-                          position: !input 'night_closed_position'
+                          position: !input "night_closed_position"
                   - conditions:
-                      - '{{ not pause_now }}'
-                      - '{{ expand(reclose_scene) | count > 0 }}'
+                      - "{{ not pause_now }}"
+                      - "{{ expand(reclose_scene) | count > 0 }}"
                     sequence:
                       - action: scene.turn_on
                         target:
-                          entity_id: '{{ reclose_scene }}'
+                          entity_id: "{{ reclose_scene }}"
                       - if:
-                          - '{{ shading_status_helper is string and is_state(shading_status_helper, ''on'') }}'
+                          - "{{ shading_status_helper is string and is_state(shading_status_helper, 'on') }}"
                         then:
                           - action: input_boolean.turn_off
                             target:
-                              entity_id: '{{ shading_status_helper }}'
+                              entity_id: "{{ shading_status_helper }}"
