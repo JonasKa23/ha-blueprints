@@ -72,6 +72,7 @@ class CoverLogicTests(unittest.TestCase):
             shading_enabled=True, pause_active=False,
             daily_forecast={}, today_forecast={}, daily_high=None, daily_low=None,
             night_temp_ok=True, evening_temp_ok=True,
+            device_name_map=[], notification_tag='window_test',
         )
         self.branches = {branch['conditions'][0]['id']: branch for branch in self.doc['actions'][1]['choose']}
 
@@ -136,13 +137,20 @@ class CoverLogicTests(unittest.TestCase):
                         self.run_steps(step.get('default', []))
                 elif 'sequence' in step:
                     self.run_steps(step['sequence'])
+                elif 'repeat' in step:
+                    for item in self.render(step['repeat']['for_each']):
+                        self.ctx['repeat'] = {'item': item}
+                        self.run_steps(step['repeat']['sequence'])
                 elif 'wait_for_trigger' in step:
                     # Leave the run suspended; these tests inspect the initial window reaction.
                     return
                 elif 'stop' in step:
                     self.fail(step['stop'])
                 elif 'action' in step:
-                    action = step['action']
+                    action = self.render(step['action'])
+                    if action.startswith('notify.'):
+                        self.calls.append((action, self.render(step['data']['message'])))
+                        continue
                     if action == 'persistent_notification.create':
                         self.calls.append(action)
                         continue
@@ -295,6 +303,77 @@ class CoverLogicTests(unittest.TestCase):
         self.assertEqual(self.position, 35)
         self.finish_ventilation(context)
         self.assertEqual(self.position, 20)
+
+    def test_late_window_close_catches_up_night_without_notification_devices(self):
+        self.position = 0
+        self.states['input_boolean.night'] = 'on'
+        self.ctx['night_closed_position'] = 5
+        context = self.begin_ventilation()
+        self.finish_ventilation(context, timed_out=True)
+        self.assertEqual(self.position, 20)
+        self.states['binary_sensor.window'] = 'off'
+        self.run_trigger('window_closed', from_state={'state': 'on'})
+        self.assertEqual(self.position, 5)
+
+    def test_late_window_close_respects_guards(self):
+        for scenario in ('morning', 'paused', 'warm', 'day', 'unavailable', 'unknown', 'no_scene'):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.position = 0
+                self.states['input_boolean.night'] = 'on'
+                context = self.begin_ventilation()
+                self.finish_ventilation(context, timed_out=True)
+                previous = 'on'
+                if scenario == 'morning':
+                    self.run_trigger('morning_open')
+                elif scenario == 'paused':
+                    self.ctx['pause_active'] = True
+                elif scenario == 'warm':
+                    self.forecast[0]['templow'] = 25
+                elif scenario == 'day':
+                    self.states['input_boolean.night'] = 'off'
+                elif scenario in ('unavailable', 'unknown'):
+                    previous = scenario
+                elif scenario == 'no_scene':
+                    self.states.pop('scene.reclose_cover_test')
+                self.states['binary_sensor.window'] = 'off'
+                before = self.position
+                self.calls.clear()
+                self.run_trigger('window_closed', from_state={'state': previous})
+                self.assertEqual(self.position, before)
+                self.assertFalse(any(isinstance(call, tuple) for call in self.calls))
+
+    def test_late_window_close_rechecks_state_after_forecast(self):
+        for scenario in ('morning', 'paused', 'reopened', 'night_ended'):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.position = 0
+                self.states['input_boolean.night'] = 'on'
+                context = self.begin_ventilation()
+                self.finish_ventilation(context, timed_out=True)
+                self.states['binary_sensor.window'] = 'off'
+
+                def change_state():
+                    if scenario == 'morning':
+                        context = copy.deepcopy(self.ctx)
+                        self.run_trigger('morning_open')
+                        self.ctx = context
+                    elif scenario == 'paused':
+                        self.ctx['pause_boolean'] = ['input_boolean.pause']
+                        self.states['input_boolean.pause'] = 'on'
+                    elif scenario == 'reopened':
+                        self.states['binary_sensor.window'] = 'on'
+                    else:
+                        self.states['input_boolean.night'] = 'off'
+
+                self.after_forecast = change_state
+                self.run_trigger('window_closed', from_state={'state': 'on'})
+                self.assertEqual(self.position, 100 if scenario == 'morning' else 20)
+
+    def test_window_close_still_clears_notifications_during_pause(self):
+        self.ctx.update(pause_active=True, device_name_map=[{'service': 'mobile_app_test'}])
+        self.run_trigger('window_closed', from_state={'state': 'on'})
+        self.assertEqual(self.calls, [('notify.mobile_app_test', 'clear_notification')])
 
     def test_paused_morning_does_not_cancel_ventilation(self):
         self.position = 10

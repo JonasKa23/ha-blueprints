@@ -35,7 +35,7 @@ Gemeinsame Helfer (Uhrzeit, Abendmodus, Nachtmodus, Sonnenschutz-Freigabe) wähl
   mit optionalem globalem Freigabe-Schalter
 - Benachrichtigungen bei offenem Fenster
 
-Mindestversion: Home Assistant 2024.10.
+Mindestversion: Home Assistant 2026.11.0.
 
 📖 **[Dokumentation und Umstellung](docs/cover_automation.md)**
 
