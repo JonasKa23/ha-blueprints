@@ -7,7 +7,7 @@ blueprint:
   domain: script
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/scripts/heizdecke_vorwaermen.yaml
   homeassistant:
-    min_version: '2024.10.0'
+    min_version: "2024.10.0"
   input:
     steckdose:
       name: Heizdecken-Steckdose
@@ -21,13 +21,23 @@ blueprint:
       description: Minuten, wenn beim Aufruf heizzeit_min fehlt; ebenfalls begrenzt.
       default: 60
       selector:
-        number: {min: 1, max: 120, step: 1, unit_of_measurement: min, mode: box}
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: min
+          mode: box
     maximum_min:
       name: Maximale Heizzeit pro Aufruf
       description: Obergrenze; erneute Aufrufe können die gesamte Einschaltzeit verlängern.
       default: 120
       selector:
-        number: {min: 1, max: 120, step: 1, unit_of_measurement: min, mode: box}
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: min
+          mode: box
     benachrichtigung:
       name: Zusätzliche Benachrichtigungsaktion (optional)
       description: >-
@@ -43,15 +53,20 @@ fields:
     description: Optional; fehlt = Blueprint-Standard. 0 = sofort aus. Über Maximum = begrenzt.
     required: false
     selector:
-      number: {min: 0, max: 120, step: 1, unit_of_measurement: min, mode: box}
+      number:
+        min: 0
+        max: 120
+        step: 1
+        unit_of_measurement: min
+        mode: box
 variables:
   steckdose: !input steckdose
   standard_min: !input standard_min
   maximum_min: !input maximum_min
 sequence:
   - variables:
-      rohwert: '{{ heizzeit_min | default(standard_min) }}'
-      meldung: ''
+      rohwert: "{{ heizzeit_min | default(standard_min) }}"
+      meldung: ""
   - variables:
       wert_gueltig: >-
         {{ rohwert is not boolean and is_number(rohwert) and rohwert | float(0) >= 0 }}
@@ -59,17 +74,17 @@ sequence:
       dauer_min: >-
         {{ [rohwert | float(0), maximum_min | float] | min if wert_gueltig else 0 }}
   - choose:
-      - conditions: '{{ not wert_gueltig }}'
+      - conditions: "{{ not wert_gueltig }}"
         sequence:
           - variables:
-              meldung: 'Ungültige Heizzeit; sicherheitshalber wird ausgeschaltet.'
-      - conditions: '{{ dauer_min > 0 }}'
+              meldung: "Ungültige Heizzeit; sicherheitshalber wird ausgeschaltet."
+      - conditions: "{{ dauer_min > 0 }}"
         sequence:
           - choose:
               - conditions:
                   - condition: state
                     entity_id: !input steckdose
-                    state: ['on', 'off']
+                    state: ["on", "off"]
                 sequence:
                   - action: switch.turn_on
                     target:
@@ -80,28 +95,28 @@ sequence:
                         conditions:
                           - condition: state
                             entity_id: !input steckdose
-                            state: 'on'
+                            state: "on"
                     then:
                       - wait_for_trigger:
                           - trigger: state
                             entity_id: !input steckdose
-                            to: 'on'
-                        timeout: '00:00:05'
+                            to: "on"
+                        timeout: "00:00:05"
                         continue_on_timeout: true
                   - if:
                       - condition: state
                         entity_id: !input steckdose
-                        state: 'on'
+                        state: "on"
                     then:
                       # Heizzeit abwarten; Ausschalten oder Verbindungsverlust beendet früher.
                       - wait_for_trigger:
                           - trigger: state
                             entity_id: !input steckdose
-                            from: 'on'
+                            from: "on"
                         timeout:
-                          minutes: '{{ dauer_min }}'
+                          minutes: "{{ dauer_min }}"
                         continue_on_timeout: true
-                      - if: '{{ wait.completed }}'
+                      - if: "{{ wait.completed }}"
                         then:
                           - variables:
                               meldung: >-
@@ -109,7 +124,7 @@ sequence:
                                 oder nicht erreichbar.
                     else:
                       - variables:
-                          meldung: 'Einschalten nicht bestätigt; Abschaltversuch folgt.'
+                          meldung: "Einschalten nicht bestätigt; Abschaltversuch folgt."
             default:
               - variables:
                   meldung: >-
@@ -125,30 +140,30 @@ sequence:
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: 'off'
+            state: "off"
     then:
       - wait_for_trigger:
           - trigger: state
             entity_id: !input steckdose
-            to: 'off'
-        timeout: '00:00:10'
+            to: "off"
+        timeout: "00:00:10"
         continue_on_timeout: true
   - if:
       - condition: not
         conditions:
           - condition: state
             entity_id: !input steckdose
-            state: 'off'
+            state: "off"
     then:
       - variables:
           meldung: >-
             {{ meldung }} ACHTUNG: Ausschalten von {{ steckdose }} nicht bestätigt;
             Zustand {{ states(steckdose) }}. Decke/Steckdose vor Ort prüfen.
-  - if: '{{ meldung | length > 0 }}'
+  - if: "{{ meldung | length > 0 }}"
     then:
       - action: persistent_notification.create
         data:
           title: Heizdecke – Heizlauf
-          message: '{{ meldung }}'
+          message: "{{ meldung }}"
         continue_on_error: true
       - sequence: !input benachrichtigung

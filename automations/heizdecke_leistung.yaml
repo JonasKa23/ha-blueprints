@@ -8,7 +8,7 @@ blueprint:
   domain: automation
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/heizdecke_leistung.yaml
   homeassistant:
-    min_version: '2024.10.0'
+    min_version: "2024.10.0"
   input:
     steckdose:
       name: Heizdecken-Steckdose
@@ -30,24 +30,44 @@ blueprint:
       description: Beispielwert; anhand Standby-Verbrauch und Heiztakten kalibrieren.
       default: 2
       selector:
-        number: {min: 0, max: 500, step: 0.1, unit_of_measurement: W, mode: box}
+        number:
+          min: 0
+          max: 500
+          step: 0.1
+          unit_of_measurement: W
+          mode: box
     unten_min:
       name: Unterlast-Zeitfenster
       description: Länger als die längste normale Heizpause wählen; durchgehend unter Grenze.
       default: 15
       selector:
-        number: {min: 1, max: 120, step: 1, unit_of_measurement: min, mode: box}
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: min
+          mode: box
     oben_w:
       name: Oberer Schwellwert
       description: Pflichtwert aus Nennleistung und normalen Spitzen ableiten; kein geratener Default.
       selector:
-        number: {min: 1, max: 3680, step: 1, unit_of_measurement: W, mode: box}
+        number:
+          min: 1
+          max: 3680
+          step: 1
+          unit_of_measurement: W
+          mode: box
     oben_s:
       name: Überlast-Bestätigungsfenster
       description: Danach sofort aus; passend zum Messintervall wählen, keine Einzelwert-Reaktion.
       default: 30
       selector:
-        number: {min: 1, max: 300, step: 1, unit_of_measurement: s, mode: box}
+        number:
+          min: 1
+          max: 300
+          step: 1
+          unit_of_measurement: s
+          mode: box
     dauerlimit_aktiv:
       name: Zusätzliche maximale Einschaltzeit aktivieren
       description: >-
@@ -62,7 +82,12 @@ blueprint:
       description: Unabhängige Obergrenze; wird durch Script-Neustart bei weiter eingeschalteter Dose nicht verlängert.
       default: 120
       selector:
-        number: {min: 1, max: 240, step: 1, unit_of_measurement: min, mode: box}
+        number:
+          min: 1
+          max: 240
+          step: 1
+          unit_of_measurement: min
+          mode: box
     benachrichtigung:
       name: Zusätzliche Benachrichtigungsaktion (optional)
       description: "notify-Aktion mit message: '{{ meldung }}'; HA-Meldung erfolgt immer."
@@ -101,13 +126,13 @@ triggers:
     id: dauerlimit
     enabled: !input dauerlimit_aktiv
     entity_id: !input steckdose
-    to: 'on'
+    to: "on"
     for:
       minutes: !input dauerlimit_min
 conditions:
   - condition: state
     entity_id: !input steckdose
-    state: 'on'
+    state: "on"
 actions:
   - variables:
       meldung: >-
@@ -127,13 +152,13 @@ actions:
             conditions:
               - condition: state
                 entity_id: !input steckdose
-                state: 'off'
+                state: "off"
         then:
           - wait_for_trigger:
               - trigger: state
                 entity_id: !input steckdose
-                to: 'off'
-            timeout: '00:00:10'
+                to: "off"
+            timeout: "00:00:10"
             continue_on_timeout: true
       - variables:
           meldung: >-
@@ -154,6 +179,6 @@ actions:
   - action: persistent_notification.create
     data:
       title: Heizdecke – Überwachung
-      message: '{{ meldung }}'
+      message: "{{ meldung }}"
     continue_on_error: true
   - sequence: !input benachrichtigung

@@ -106,7 +106,8 @@ blueprint:
               unit_of_measurement: Minuten
         use_area_name:
           name: Bereichsnamen in Benachrichtigungen verwenden
-          description: Wenn aktiviert, wird der Bereichsname (z.B. "Wohnzimmer") statt des Sensor-Namens
+          description:
+            Wenn aktiviert, wird der Bereichsname (z.B. "Wohnzimmer") statt des Sensor-Namens
             verwendet.
           default: true
           selector:
@@ -161,10 +162,10 @@ actions:
           - condition: trigger
             id: window_open_long
           - "{{ not (sleep_mode_boolean is string and is_state(sleep_mode_boolean, 'on')) }}"
-          - '{{ device_name_map | length > 0 }}'
+          - "{{ device_name_map | length > 0 }}"
         sequence:
           - variables:
-              has_area: '{{ use_area_name and area_name(window_sensor) is not none }}'
+              has_area: "{{ use_area_name and area_name(window_sensor) is not none }}"
               window_label: |-
                 {%- if has_area -%}
                   {{ area_name(window_sensor) }}
@@ -184,7 +185,7 @@ actions:
                   Fenster '{{ window_label }}' ist seit über {{ notification_timeout }} Minuten offen.
                 {%- endif -%}
           - repeat:
-              for_each: '{{ device_name_map }}'
+              for_each: "{{ device_name_map }}"
               sequence:
                 - condition: template
                   value_template: >-
@@ -203,21 +204,21 @@ actions:
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
-                    title: '{{ title_text }}'
-                    message: '{{ message_text }}'
+                    title: "{{ title_text }}"
+                    message: "{{ message_text }}"
                     data:
-                      tag: '{{ notification_tag }}'
+                      tag: "{{ notification_tag }}"
       - conditions:
           - condition: trigger
             id: window_closed
-          - '{{ device_name_map | length > 0 }}'
+          - "{{ device_name_map | length > 0 }}"
         sequence:
           - repeat:
-              for_each: '{{ device_name_map }}'
+              for_each: "{{ device_name_map }}"
               sequence:
                 - action: notify.{{ repeat.item.service }}
                   continue_on_error: true
                   data:
                     message: clear_notification
                     data:
-                      tag: '{{ notification_tag }}'
+                      tag: "{{ notification_tag }}"
