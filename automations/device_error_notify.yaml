@@ -7,6 +7,12 @@ blueprint:
        written to it).
     2. Optionally sends a notification when the target temperature has been
        reached (current temperature ≥ target temperature).
+
+    The message includes the area (room) the thermostat device is assigned to.
+
+    Based on the Better Thermostat blueprint by KartoffelToby.
+    Adapted by JonasKa23.
+    Original: https://github.com/KartoffelToby/better_thermostat/blob/master/blueprints/device_error_notify.yaml
   domain: automation
   source_url: https://github.com/JonasKa23/ha-blueprints/blob/main/automations/device_error_notify.yaml
   input:
@@ -79,7 +85,7 @@ condition: []
 
 action:
   - choose:
-      # ── Device error ───────────────────────────────────────────────────────
+      # Device error
       - conditions:
           - condition: trigger
             id: error
@@ -89,11 +95,12 @@ action:
           - service: !input notify_target
             data:
               title: "Better Thermostat – Device error"
-              message: >
-                ⚠️ {{ device_attr(thermostat_device, 'name') }} reported a
-                device error. Please check the integration and your TRV devices.
+              message: >-
+                {% set room = area_name(thermostat_device) %}
+                ⚠️ {{ device_attr(thermostat_device, 'name') }}{{ ' (' ~ room ~ ')' if room else '' }}
+                reported a device error. Please check the integration and your TRV devices.
 
-      # ── Target temperature reached ─────────────────────────────────────────
+      # Target temperature reached
       - conditions:
           - condition: trigger
             id: temp_reached
@@ -103,6 +110,7 @@ action:
           - service: !input notify_target
             data:
               title: "Better Thermostat – Target temperature reached"
-              message: >
-                ✅ {{ device_attr(thermostat_device, 'name') }} has reached
-                its target temperature.
+              message: >-
+                {% set room = area_name(thermostat_device) %}
+                ✅ {{ device_attr(thermostat_device, 'name') }}{{ ' (' ~ room ~ ')' if room else '' }}
+                has reached its target temperature.

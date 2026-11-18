@@ -1,0 +1,78 @@
+name: Update Better Thermostat notification blueprint
+
+'on':
+  schedule:
+    - cron: '38 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: device-error-upstream-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Prepare upstream update
+        id: update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT_DIR: ${{ runner.temp }}/device-error-upstream
+        run: |
+          python scripts/update_device_error_upstream.py --apply --report-dir "$REPORT_DIR"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads((Path(os.environ['REPORT_DIR']) / 'summary.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"status={result['status']}\n")
+          PY
+
+      - name: Upload comparison and conflicts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-error-upstream-review
+          path: ${{ runner.temp }}/device-error-upstream
+          if-no-files-found: ignore
+
+      - name: Validate update
+        if: steps.update.outputs.status == 'updated'
+        run: |
+          pip install --quiet pyyaml jinja2 yamllint
+          yamllint automations/device_error_notify.yaml
+          python skills/ha-blueprint-dev/scripts/validate_blueprint.py automations/device_error_notify.yaml
+          python -m unittest discover -s tests
+          git diff --check
+
+      - name: Create or update review pull request
+        if: steps.update.outputs.status == 'updated'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/device-error-upstream
+          base: ${{ github.event.repository.default_branch }}
+          title: 'Better Thermostat: Benachrichtigungs-Blueprint aktualisieren'
+          commit-message: Update notification blueprint from Better Thermostat upstream
+          body-path: ${{ runner.temp }}/device-error-upstream/pull-request.md
+          draft: always-true
+          add-paths: |
+            automations/device_error_notify.yaml
+            upstream/device_error_notify.json
+            upstream/device_error_notify.original.txt
