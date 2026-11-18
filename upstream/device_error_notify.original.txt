@@ -1,0 +1,108 @@
+blueprint:
+  name: "Better Thermostat: Device error & target temperature reached alerts"
+  description: >
+    Two alerts in one blueprint:
+    1. Sends a notification when Better Thermostat reports a device error
+       (a TRV becomes unavailable, or does not take the target temperature
+       written to it).
+    2. Optionally sends a notification when the target temperature has been
+       reached (current temperature ≥ target temperature).
+  domain: automation
+  source_url: https://github.com/KartoffelToby/better_thermostat/blob/master/blueprints/device_error_notify.yaml
+  input:
+    thermostat_device:
+      name: Better Thermostat device
+      description: The Better Thermostat device to monitor.
+      selector:
+        device:
+          integration: better_thermostat
+
+    notify_target:
+      name: Notification target
+      description: >
+        The notification service to call, e.g. `notify.mobile_app_my_phone`.
+      default: notify.notify
+      selector:
+        text: {}
+
+    enable_error_alert:
+      name: Alert on device errors
+      description: Send a notification when a device error is detected.
+      default: true
+      selector:
+        boolean: {}
+
+    enable_temp_reached_alert:
+      name: Alert when target temperature is reached
+      description: Send a notification when the room has reached the setpoint.
+      default: false
+      selector:
+        boolean: {}
+
+    temp_reached_delay:
+      name: Delay before "target reached" alert (minutes)
+      description: >
+        How long the temperature must be at or above the setpoint before the
+        alert fires. Prevents false positives from sensor jitter.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 30
+          step: 1
+          unit_of_measurement: min
+
+mode: parallel
+max_exceeded: silent
+
+variables:
+  thermostat_device: !input thermostat_device
+  enable_error_alert: !input enable_error_alert
+  enable_temp_reached_alert: !input enable_temp_reached_alert
+
+trigger:
+  - platform: device
+    domain: better_thermostat
+    device_id: !input thermostat_device
+    type: device_error
+    id: error
+
+  - platform: device
+    domain: better_thermostat
+    device_id: !input thermostat_device
+    type: target_temp_reached
+    for:
+      minutes: !input temp_reached_delay
+    id: temp_reached
+
+condition: []
+
+action:
+  - choose:
+      # ── Device error ───────────────────────────────────────────────────────
+      - conditions:
+          - condition: trigger
+            id: error
+          - condition: template
+            value_template: "{{ enable_error_alert }}"
+        sequence:
+          - service: !input notify_target
+            data:
+              title: "Better Thermostat – Device error"
+              message: >
+                ⚠️ {{ device_attr(thermostat_device, 'name') }} reported a
+                device error. Please check the integration and your TRV devices.
+
+      # ── Target temperature reached ─────────────────────────────────────────
+      - conditions:
+          - condition: trigger
+            id: temp_reached
+          - condition: template
+            value_template: "{{ enable_temp_reached_alert }}"
+        sequence:
+          - service: !input notify_target
+            data:
+              title: "Better Thermostat – Target temperature reached"
+              message: >
+                ✅ {{ device_attr(thermostat_device, 'name') }} has reached
+                its target temperature.

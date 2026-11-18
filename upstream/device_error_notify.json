@@ -1,0 +1,9 @@
+{
+  "repository": "KartoffelToby/better_thermostat",
+  "branch": "master",
+  "path": "blueprints/device_error_notify.yaml",
+  "reviewed_commit": "aed2036b3c6d90b4e1e6ea774f0f47852a05d25d",
+  "reviewed_blob": "e18ef51078c8ed2ddbfecae543d6d08c3e7c0987",
+  "local_path": "automations/device_error_notify.yaml",
+  "baseline_path": "upstream/device_error_notify.original.txt"
+}

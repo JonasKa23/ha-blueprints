@@ -4,6 +4,16 @@ A collection of Home Assistant automation blueprints.
 
 ## Automations
 
+### Better Thermostat: Gerätefehler und Zieltemperatur
+
+**File:** `automations/device_error_notify.yaml`
+
+Benachrichtigungen mit Raumangabe bei Gerätefehlern und optional beim Erreichen
+der Zieltemperatur. Eine wöchentliche Upstream-Prüfung bietet konfliktfrei
+zusammengeführte Original-Updates als Entwurfs-Pull-Request zur Prüfung an.
+
+- [Updates, Aktivierung und lokale Übernahme](docs/device_error_notify.md)
+
 ### Smart Heating Schedule
 
 **File:** `automations/smart_heating_schedule.yaml`
